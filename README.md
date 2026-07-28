@@ -4,8 +4,8 @@
 <br>
 <a href="https://eprint.iacr.org/2026/450"><img src="imgs/preprint_icon.svg" alt="Link to the preprint PDF" ></a>
 
-<!--<img src="imgs/console.gif" width="650"/>-->
-<img src="imgs/terminal.gif" width="650">
+<!--<img src="imgs/console.gif" width="750"/>-->
+<img src="imgs/terminal.gif" width="750">
 
 <sup><sub>(To replicate this toy example, simply run `./FlexibleIntsCKKS --ring 12 --bits 64` after installation) </sub></sup>
 
