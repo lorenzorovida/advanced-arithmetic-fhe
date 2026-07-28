@@ -25,7 +25,7 @@ Additionally, also binary operations are easily supported:
 - AND ($a \land b$)
 - XOR ($a \oplus b$)
 - OR ($a \lor b$)
-- NOT (~$a$)
+- NOT (~ $a$)
 
 Notice that the code is meant to be used with high-level APIs, therefore users can use functions such as `add_integer`, `xor_boolean` or `sqrt_integer`. Of course,  an interested user can have a look into the functions to see the implementation of the techniques described in the paper. The latter description may be slighly simpler from the actual code for readability reasons, but feel free to open issues if you have any question.
 
