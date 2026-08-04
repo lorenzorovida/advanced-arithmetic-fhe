@@ -1348,7 +1348,7 @@ Ctxt CKKSController::square_root_integer(const Ctxt &c, int bits, int zslots) {
          * term1 = (3 << F) - mx2
          */
         vector<uint128_t> a(zslots);
-        for (int j = 0; j < a.size(); j++) a[j] = 3;
+        for (uint32_t j = 0; j < a.size(); j++) a[j] = 3;
         //for (int j = 0; j < (2 * get_context()->GetRingDimension() / (bits * bits)) - 1; j++) {
         //    a.push_back(0);
         //}
@@ -1491,9 +1491,9 @@ Ctxt CKKSController::square_root_integer(const Ctxt &c, int bits, int zslots) {
     }
 
     vector<uint128_t> a(context->GetRingDimension() / (bits * bits));
-    for (int i = 0; i < a.size(); i++) a[i] = ONE_FP;
+    for (uint32_t i = 0; i < a.size(); i++) a[i] = ONE_FP;
     Ctxt ONE_FP_CTXT = encrypt_multi_int(a, bits, parity->GetLevel());
-    for (int i = 0; i < a.size(); i++) a[i] = SQRT2_FP;
+    for (uint32_t i = 0; i < a.size(); i++) a[i] = SQRT2_FP;
     Ctxt SQRT2_FP_CTXT = encrypt_multi_int(a, bits, parity->GetLevel());
 
     Ctxt correction = add(mult(SQRT2_FP_CTXT, parity), mult(ONE_FP_CTXT, parityinverse));
@@ -1508,7 +1508,7 @@ Ctxt CKKSController::square_root_integer(const Ctxt &c, int bits, int zslots) {
     if (verbose) print(y, bits * 2 + 2);
 
 
-    for (int i = 0; i < a.size(); i++) a[i] = bits + 1;
+    for (uint32_t i = 0; i < a.size(); i++) a[i] = bits + 1;
     Ctxt finalshift = encrypt_multi_int(a, bits, y->GetLevel());
 
     finalshift = binboot(sub_integer(finalshift, s, bits)); //This should contain bit_length
@@ -1676,7 +1676,7 @@ void CKKSController::ascon_permutation(Ctxt &S, int zslots) {
 Ctxt CKKSController::mask_zero_slot(const Ctxt &c, int bits, int slot) {
     vector<double> mask(c->GetSlots());
 
-    for (int i = 0; i < mask.size(); i++) {
+    for (uint32_t i = 0; i < mask.size(); i++) {
         mask[i] = 1;
     }
 
@@ -1690,11 +1690,11 @@ Ctxt CKKSController::mask_zero_slot(const Ctxt &c, int bits, int slot) {
 Ctxt CKKSController::mask_zero_slots(const Ctxt &c, int bits, vector<int> slots) {
     vector<double> mask(c->GetSlots());
 
-    for (int i = 0; i < mask.size(); i++) {
+    for (uint32_t i = 0; i < mask.size(); i++) {
         mask[i] = 1;
     }
 
-    for (int j = 0; j < slots.size(); j++) {
+    for (uint32_t j = 0; j < slots.size(); j++) {
         for (int i = 0; i < bits; i++) {
             mask[slots[j] * ((bits * bits) / 2) + i] = 0;
         }
@@ -1716,11 +1716,11 @@ Ctxt CKKSController::mask_one_slot(const Ctxt &c, int bits, int slot) {
 Ctxt CKKSController::mask_one_slots(const Ctxt &c, int bits, vector<int> slots) {
     vector<double> mask(c->GetSlots());
 
-    for (int i = 0; i < mask.size(); i++) {
+    for (uint32_t i = 0; i < mask.size(); i++) {
         mask[i] = 0;
     }
 
-    for (int j = 0; j < slots.size(); j++) {
+    for (uint32_t j = 0; j < slots.size(); j++) {
         for (int i = 0; i < bits; i++) {
             mask[slots[j] * ((bits * bits) / 2) + i] = 1;
         }
