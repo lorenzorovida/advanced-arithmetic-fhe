@@ -4,7 +4,7 @@ project(FlexibleIntsCKKS)
 set(CMAKE_CXX_STANDARD 17)
 option( BUILD_STATIC "Set to ON to include static versions of the library" OFF)
 
-find_package(OpenFHE CONFIG REQUIRED NO_DEFAULT_PATH)
+find_package(OpenFHE CONFIG REQUIRED )
 if (OpenFHE_FOUND)
     message(STATUS "FOUND PACKAGE OpenFHE")
     message(STATUS "OpenFHE Version: ${BASE_OPENFHE_VERSION}")
