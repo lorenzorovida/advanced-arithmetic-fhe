@@ -112,7 +112,7 @@ void experiment_hash_ascon() {
     S_vector.push_back(S[3]);
     S_vector.push_back(S[4]);
 
-    for (int i = 0; i < cc.get_context()->GetRingDimension() / (bits * bits) - 5; i++) {
+    for (auto i = 0; i < cc.get_context()->GetRingDimension() / (bits * bits) - 5; i++) {
         S_vector.push_back(0);
     }
 
@@ -157,7 +157,7 @@ void experiment_hash_ascon() {
     vector<uint128_t> M_vector;
     M_vector.push_back(m_int);
 
-    for (int i = 0; i < cc.get_context()->GetRingDimension() / (bits * bits) - 1; i++) M_vector.push_back(0);
+    for (auto i = 0; i < cc.get_context()->GetRingDimension() / (bits * bits) - 1; i++) M_vector.push_back(0);
 
     Ctxt Mctxt = cc.encrypt_multi_int(M_vector, bits, startinglevel);
 
@@ -188,7 +188,7 @@ void experiment_mev() {
     vector<uint128_t> g;
     g.push_back(997);
 
-    for (int i = 0; i < cc.get_context()->GetRingDimension() / (bits * bits) - 1; i++) {
+    for (auto i = 0; i < cc.get_context()->GetRingDimension() / (bits * bits) - 1; i++) {
         //Filling the rest of slots with zeroes
         X.push_back(0);
         Y.push_back(0);
@@ -238,7 +238,7 @@ void experiment_squareroot(int bits) {
     //a[0] = 121539599761527095589652177270517360288;
 
 
-    for (int i = 0; i < cc.get_context()->GetRingDimension() / (bits * bits) - 1; i++) {
+    for (auto i = 0; i < cc.get_context()->GetRingDimension() / (bits * bits) - 1; i++) {
         a.push_back(random_number(bits));
     }
 
@@ -266,7 +266,7 @@ void experiment_division(int bits) {
     cout << "Numerator:   " << to_string_uint128(a[0]) << endl;
     cout << "Denominator: " << to_string_uint128(b[0]) << endl;
 
-    for (int i = 0; i < cc.get_context()->GetRingDimension() / (bits * bits) - 1; i++) {
+    for (auto i = 0; i < cc.get_context()->GetRingDimension() / (bits * bits) - 1; i++) {
         a.push_back(random_number(bits));
         b.push_back(random_number(bits/2));
     }
@@ -302,7 +302,7 @@ void experiment_noise_conversion() {
 
     vector<double> mask3;
 
-    for (int i = 0; i < cc.get_context()->GetRingDimension() / 2; i++) {
+    for (auto i = 0; i < cc.get_context()->GetRingDimension() / 2; i++) {
         mask3.push_back(0.01);
     }
 

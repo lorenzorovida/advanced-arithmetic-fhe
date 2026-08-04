@@ -8,11 +8,11 @@ void CKKSController::generate_context_for_bootstrapping(int ring, int levels) {
     int dcrtBits = 40;
     int firstMod = 41;
 
-    depth = levels + FHECKKSRNS::GetBootstrapDepth({4, 4}, lbcrypto::SPARSE_ENCAPSULATED);
+    depth = levels + FHECKKSRNS::GetBootstrapDepth({3, 3}, lbcrypto::SPARSE_ENCAPSULATED);
 
     parameters.SetSecurityLevel(lbcrypto::HEStd_NotSet);
     parameters.SetRingDim(ring);
-    parameters.SetNumLargeDigits(2);
+    parameters.SetNumLargeDigits(4);
 
     parameters.SetBatchSize(ring / 2);
 
@@ -42,7 +42,7 @@ void CKKSController::generate_context_for_bootstrapping(int ring, int levels) {
 void CKKSController::generate_bootstrapping() {
     int slots_bootstrapping = slots;
 
-    context->EvalBootstrapSetup({4, 4}, {0, 0}, slots_bootstrapping, 0, true, true);
+    context->EvalBootstrapSetup({3, 3}, {0, 0}, slots_bootstrapping, 0, true, true);
     context->EvalBootstrapKeyGen(key_pair.secretKey, slots_bootstrapping);
 }
 
@@ -1329,7 +1329,7 @@ Ctxt CKKSController::square_root_integer(const Ctxt &c, int bits, int zslots) {
     if (verbose) cout << "Output of LUT: " << print_ints(x, bits+2, zslots) << endl;
 
 
-    for (int i = 0; i < ceil(log2(bits / LUT_BITS)); i++) {
+    for (int i = 0; i < ceil(log2(bits / LUT_BITS)) - 1; i++) {
         /*
          * x2 = (x * x) >> F
          */

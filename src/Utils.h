@@ -381,7 +381,7 @@ static inline std::vector<double> last_bits(vector<double> vec, int slots, int b
         int a = (closest_pow2(bits) * closest_pow2(bits) / 2) * i;
         int b = a + bits;
 
-        result.push_back(vec[b]);
+        result.push_back(round(vec[b]));
     }
 
     return result;
