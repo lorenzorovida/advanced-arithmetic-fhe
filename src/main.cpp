@@ -135,7 +135,7 @@ void experiment_hash_ascon() {
 
     // bytes_to_int (little-endian)
     uint64_t m_int = 0;
-    for (int i = 0; i < m_padded.size(); i++)
+    for (uint32_t i = 0; i < m_padded.size(); i++)
         m_int |= (uint64_t)m_padded[i] << (i * 8);
 
     cout << m_int << endl;
@@ -188,7 +188,7 @@ void experiment_mev() {
     vector<uint128_t> g;
     g.push_back(997);
 
-    for (auto i = 0; i < cc.get_context()->GetRingDimension() / (bits * bits) - 1; i++) {
+    for (uint32_t i = 0; i < cc.get_context()->GetRingDimension() / (bits * bits) - 1; i++) {
         //Filling the rest of slots with zeroes
         X.push_back(0);
         Y.push_back(0);
@@ -238,7 +238,7 @@ void experiment_squareroot(int bits) {
     //a[0] = 121539599761527095589652177270517360288;
 
 
-    for (auto i = 0; i < cc.get_context()->GetRingDimension() / (bits * bits) - 1; i++) {
+    for (uint32_t i = 0; i < cc.get_context()->GetRingDimension() / (bits * bits) - 1; i++) {
         a.push_back(random_number(bits));
     }
 
@@ -266,7 +266,7 @@ void experiment_division(int bits) {
     cout << "Numerator:   " << to_string_uint128(a[0]) << endl;
     cout << "Denominator: " << to_string_uint128(b[0]) << endl;
 
-    for (auto i = 0; i < cc.get_context()->GetRingDimension() / (bits * bits) - 1; i++) {
+    for (uint32_t i = 0; i < cc.get_context()->GetRingDimension() / (bits * bits) - 1; i++) {
         a.push_back(random_number(bits));
         b.push_back(random_number(bits/2));
     }
@@ -302,7 +302,7 @@ void experiment_noise_conversion() {
 
     vector<double> mask3;
 
-    for (auto i = 0; i < cc.get_context()->GetRingDimension() / 2; i++) {
+    for (uint32_t i = 0; i < cc.get_context()->GetRingDimension() / 2; i++) {
         mask3.push_back(0.01);
     }
 
