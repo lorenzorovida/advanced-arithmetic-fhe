@@ -4,8 +4,6 @@ project(FlexibleIntsCKKS)
 set(CMAKE_CXX_STANDARD 17)
 option( BUILD_STATIC "Set to ON to include static versions of the library" OFF)
 
-set(OpenFHE_DIR "/Users/narger/Desktop/OpenFHE-Fork/openfhe-development-chebyshevSIMD/build")
-
 find_package(OpenFHE CONFIG REQUIRED NO_DEFAULT_PATH)
 if (OpenFHE_FOUND)
     message(STATUS "FOUND PACKAGE OpenFHE")
