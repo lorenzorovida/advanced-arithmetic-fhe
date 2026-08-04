@@ -112,7 +112,7 @@ void experiment_hash_ascon() {
     S_vector.push_back(S[3]);
     S_vector.push_back(S[4]);
 
-    for (auto i = 0; i < cc.get_context()->GetRingDimension() / (bits * bits) - 5; i++) {
+    for (uint32_t i = 0; i < cc.get_context()->GetRingDimension() / (bits * bits) - 5; i++) {
         S_vector.push_back(0);
     }
 
@@ -157,7 +157,7 @@ void experiment_hash_ascon() {
     vector<uint128_t> M_vector;
     M_vector.push_back(m_int);
 
-    for (auto i = 0; i < cc.get_context()->GetRingDimension() / (bits * bits) - 1; i++) M_vector.push_back(0);
+    for (uint32_t i = 0; i < cc.get_context()->GetRingDimension() / (bits * bits) - 1; i++) M_vector.push_back(0);
 
     Ctxt Mctxt = cc.encrypt_multi_int(M_vector, bits, startinglevel);
 
