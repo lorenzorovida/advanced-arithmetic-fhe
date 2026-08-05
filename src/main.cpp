@@ -234,9 +234,6 @@ void experiment_squareroot(int bits) {
     vector<uint128_t> a;
 
     a.push_back(random_number(bits));
-    //a[0] = 1326640686;
-    //a[0] = 121539599761527095589652177270517360288;
-
 
     for (uint32_t i = 0; i < cc.get_context()->GetRingDimension() / (bits * bits) - 1; i++) {
         a.push_back(random_number(bits));
@@ -379,7 +376,7 @@ void random_operations_batched(int bits) {
     log.info(1) << "Addition (a + b)" << endl;
     log(2) << "Expected: " << to_string_uint128(add_simd(a, b)) << endl;
     log(2) << "Obtained: " << cc.print_ints(csum, bits + 1, slots) << endl;
-    if (verbose >= 3)print_duration(time, "Addition took: ");
+    if (verbose >= 3) print_duration(time, "Addition took: ");
     log(1) << "-----" << endl;
 
     time = steady_clock::now();

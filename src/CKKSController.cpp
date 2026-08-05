@@ -5,14 +5,14 @@ void CKKSController::generate_context_for_bootstrapping(int ring, int levels) {
 
     parameters.SetSecretKeyDist(lbcrypto::SPARSE_ENCAPSULATED);
 
-    int dcrtBits = 40;
+    int dcrtBits = 36;
     int firstMod = 41;
 
     depth = levels + FHECKKSRNS::GetBootstrapDepth({3, 3}, lbcrypto::SPARSE_ENCAPSULATED);
 
     parameters.SetSecurityLevel(lbcrypto::HEStd_NotSet);
     parameters.SetRingDim(ring);
-    parameters.SetNumLargeDigits(4);
+    parameters.SetNumLargeDigits(3);
 
     parameters.SetBatchSize(ring / 2);
 
