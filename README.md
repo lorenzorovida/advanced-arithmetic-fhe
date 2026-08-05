@@ -37,7 +37,7 @@ Notice that the code is meant to be used with high-level APIs, therefore users c
 ## Fresh start
 One of the key ideas behind this work is *simplicity*. It can indeed be used by simply installing a custom OpenFHE fork and by compiling the CMake project.
 
-We require a custom fork of OpenFHE (that is updated to v1.5.0 and it includes the StC-first bootstrapping), this allows to use the two functions `EvalChebyshevSeriesPSBatchRepeated` and `EvalBootstrapStCFirstBits`. The first generalizes the functionality to evaluate a Chebyshev polynomial over a ciphertext to evaluate $n$ Chebyshev polynomials, one for each slot of the ciphertext. The second allows to evaluate a cleaning bootstrapping operation à la [[BCKS24]](https://eprint.iacr.org/2024/767).
+We require a custom fork of OpenFHE (that is updated to v1.5.1 and it includes the StC-first bootstrapping), this allows to use the two functions `EvalChebyshevSeriesPSBatchRepeated` and `EvalBootstrapStCFirstBits`. The first generalizes the functionality to evaluate a Chebyshev polynomial over a ciphertext to evaluate $n$ Chebyshev polynomials, one for each slot of the ciphertext. The second allows to evaluate a cleaning bootstrapping operation à la [[BCKS24]](https://eprint.iacr.org/2024/767).
 
 
 1) Install the `repeated_poly_and_stcboot` branch from [this](https://github.com/lorenzorovida/openfhe-development-chebyshevSIMD) custom fork of OpenFHE 
