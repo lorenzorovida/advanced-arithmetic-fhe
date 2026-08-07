@@ -1,6 +1,6 @@
 # A unified toolkit for advanced arithmetic in FHE
 
-[![CMake on multiple platforms](https://github.com/lorenzorovida/advanced-arithmetic-fhe/actions/workflows/c-cpp.yml/badge.svg)](https://github.com/lorenzorovida/advanced-arithmetic-fhe/actions/workflows/c-cpp.yml)
+[![GitHub CI](https://github.com/lorenzorovida/advanced-arithmetic-fhe/actions/workflows/c-cpp.yml/badge.svg)](https://github.com/lorenzorovida/advanced-arithmetic-fhe/actions/workflows/c-cpp.yml)
 <br>
 <a href="https://eprint.iacr.org/2026/450"><img src="imgs/preprint_icon.svg" alt="Link to the preprint PDF" ></a>
 
