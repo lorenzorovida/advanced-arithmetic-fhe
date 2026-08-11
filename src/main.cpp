@@ -13,7 +13,7 @@ using namespace chrono;
 CKKSController cc;
 int ring_size = 14;
 int verbose = 3;
-int wordsize = 128;
+int wordsize = 64;
 
 int startinglevel = 12;
 
@@ -21,6 +21,7 @@ bool test = false;
 bool input_mode = false;
 bool mev = false;
 bool ascon = false;
+bool noise_estimate = false;
 
 void read_arguments(int argc, char* argv[]);
 void random_operations(int bits);
@@ -30,6 +31,7 @@ void experiment_division(int bits);
 void experiment_squareroot(int bits);
 void experiment_hash_ascon();
 void experiment_mev();
+void experiment_noise_estimate();
 
 
 int main(int argc, char* argv[]) {
@@ -51,12 +53,16 @@ int main(int argc, char* argv[]) {
         experiment_hash_ascon();
         exit(0);
     }
+
+    if (noise_estimate) {
+        experiment_noise_estimate();
+        exit(0);
+    }
     /*
      * Experiments
      */
     //experiment_hash_ascon();
     //experiment_division(wordsize);
-    //experiment_squareroot(wordsize);
     //experiment_mev();
 
     /*
@@ -277,6 +283,101 @@ void experiment_division(int bits) {
 
     cout << "Expected: " << to_string_uint128(div_simd(a, b)) << endl;
     cout << "Obtained: " << cc.print_ints(result, bits, zslots, false) << endl;
+
+    exit(0);
+}
+
+void experiment_noise_estimate() {
+    vector<uint128_t> a;
+
+    int bits = wordsize;
+
+    for (uint32_t i = 0; i < cc.get_context()->GetRingDimension() / (bits * bits); i++) {
+        a.push_back(0);
+    }
+
+    Ctxt c = cc.encrypt_multi_int(a, bits, 11);
+
+    int zslots = cc.get_context()->GetRingDimension() / (bits * bits);
+
+    Ctxt result = cc.binboot(cc.add_integer(c, c, bits, zslots));
+
+    vector<double> result_vector = cc.decode(cc.decrypt(result));
+    for (double & i : result_vector) {
+        i = abs(i);
+    }
+
+    double average = accumulate(result_vector.begin(), result_vector.end(), 0.0)
+                     / result_vector.size();
+
+    average = -log2(average); //Error to precision bits
+    double minimum = -log2(*max_element(result_vector.begin(), result_vector.end())); //We invert minimum and maximum as max error => min precision
+    double maximum = -log2(*min_element(result_vector.begin(), result_vector.end()));
+
+    cout << "Precision bits in addition (" << bits << " bits)" << endl;
+    cout << "Average : " << average << endl;
+    cout << "Minimum : " << minimum << endl;
+    cout << "Maximum : " << maximum << endl << "*****" << endl;
+
+    result = cc.mul_integer(c, c, bits, bits, zslots, zslots, true);
+
+    result_vector = cc.decode(cc.decrypt(result));
+    for (double & i : result_vector) {
+        i = abs(i);
+    }
+
+    average = accumulate(result_vector.begin(), result_vector.end(), 0.0)
+                     / result_vector.size();
+
+    average = -log2(average); //Error to precision bits
+    minimum = -log2(*max_element(result_vector.begin(), result_vector.end())); //We invert minimum and maximum as max error => min precision
+    maximum = -log2(*min_element(result_vector.begin(), result_vector.end()));
+
+    cout << "Precision bits in multiplication (" << bits << " bits)" << endl;
+    cout << "Average : " << average << endl;
+    cout << "Minimum : " << minimum << endl;
+    cout << "Maximum: " << maximum << endl << "*****" << endl;
+
+    result = cc.square_root_integer(c, bits, zslots);
+
+    result_vector = cc.decode(cc.decrypt(result));
+    for (double & i : result_vector) {
+        i = abs(i);
+    }
+
+    average = accumulate(result_vector.begin(), result_vector.end(), 0.0)
+              / result_vector.size();
+
+    average = -log2(average); //Error to precision bits
+    minimum = -log2(*max_element(result_vector.begin(), result_vector.end())); //We invert minimum and maximum as max error => min precision
+    maximum = -log2(*min_element(result_vector.begin(), result_vector.end()));
+
+    cout << "Precision bits in square root (" << bits << " bits)" << endl;
+    cout << "Average : " << average << endl;
+    cout << "Minimum : " << minimum << endl;
+    cout << "Maximum : " << maximum << endl << "*****" << endl;
+
+
+    result = cc.div_integer(c, c, bits, zslots);
+
+    result_vector = cc.decode(cc.decrypt(result));
+    for (double & i : result_vector) {
+        i = abs(i);
+    }
+
+    average = accumulate(result_vector.begin(), result_vector.end(), 0.0)
+              / result_vector.size();
+
+    average = -log2(average); //Error to precision bits
+    minimum = -log2(*max_element(result_vector.begin(), result_vector.end())); //We invert minimum and maximum as max error => min precision
+    maximum = -log2(*min_element(result_vector.begin(), result_vector.end()));
+
+    cout << "Precision bits in division (" << bits << " bits)" << endl;
+    cout << "Average : " << average << endl;
+    cout << "Minimum : " << minimum << endl;
+    cout << "Maximum : " << maximum << endl << "*****" << endl;
+
+
 
     exit(0);
 }
@@ -589,6 +690,9 @@ void read_arguments(int argc, char* argv[]) {
         }
         if (arg == "--hash") {
             ascon = true;
+        }
+        if (arg == "--noise") {
+            noise_estimate = true;
         }
         if (arg == "--input") {
             input_mode = true;
