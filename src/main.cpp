@@ -319,6 +319,29 @@ void experiment_noise_estimate() {
     cout << "Minimum : " << minimum << endl;
     cout << "Maximum : " << maximum << endl << "*****" << endl;
 
+    result = cc.eq_integer(c, c, bits, zslots);
+
+    result_vector = cc.decode(cc.decrypt(result));
+
+    //Slots in (relative) position 0 are equal to 1, let's correct them
+    for (uint32_t i = 0; i < zslots; i++) result_vector[i * (bits * bits) / 2] -= 1;
+
+    for (double & i : result_vector) {
+        i = abs(i);
+    }
+
+    average = accumulate(result_vector.begin(), result_vector.end(), 0.0)
+              / result_vector.size();
+
+    average = -log2(average); //Error to precision bits
+    minimum = -log2(*max_element(result_vector.begin(), result_vector.end())); //We invert minimum and maximum as max error => min precision
+    maximum = -log2(*min_element(result_vector.begin(), result_vector.end()));
+
+    cout << "Precision bits in equality (" << bits << " bits)" << endl;
+    cout << "Average : " << average << endl;
+    cout << "Minimum : " << minimum << endl;
+    cout << "Maximum: " << maximum << endl << "*****" << endl;
+
     result = cc.mul_integer(c, c, bits, bits, zslots, zslots, true);
 
     result_vector = cc.decode(cc.decrypt(result));
@@ -491,6 +514,15 @@ void random_operations_batched(int bits) {
 
     time = steady_clock::now();
 
+    Ctxt ceq = cc.eq_integer(c1, c2, bits, slots);
+    log.info(1) << "Equality (a = b)" << endl;
+    log(2) << "Expected: " << eq_simd(a, b) << endl;
+    log(2) << "Obtained: " << first_bits(cc.decode(cc.decrypt(ceq)), slots, bits) << endl;
+    if (verbose >= 3) print_duration(time, "Equality took: ");
+    log(1) << "-----" << endl;
+
+    time = steady_clock::now();
+
     Ctxt cmultmod = cc.mul_integer(c1, c2, bits, bits, slots, slots, false);
 
     log.info(1) << "Multiplication (a * b) % 2^n" << endl;
@@ -600,6 +632,15 @@ void random_operations(int bits) {
     log(2) << "Expected: " << (a <= b) << endl;
     log(2) << "Obtained: " << cc.decode(cc.decrypt(csub))[bits] << endl;
     if (verbose >= 1) print_duration(time, "Comparison took: ");
+    log(1) << "-----" << endl;
+
+    time = steady_clock::now();
+
+    Ctxt ceq = cc.eq_integer(c1, c2, bits, 1);
+    log.info(1) << "Equality (a = b)" << endl;
+    log(2) << "Expected: " << (a == b) << endl;
+    log(2) << "Obtained: " << cc.decode(cc.decrypt(ceq))[0] << endl;
+    if (verbose >= 3) print_duration(time, "Equality took: ");
     log(1) << "-----" << endl;
 
     time = steady_clock::now();

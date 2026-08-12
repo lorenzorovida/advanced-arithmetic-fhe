@@ -85,14 +85,13 @@ public:
     Ctxt process_array(const Ctxt& c, const Ctxt& c_processed, const std::vector<std::pair<int,int>>& mask_roll_pairs, int mask_size, int rep, shared_ptr<vector<DCRTPoly>> rot_precomputations);
 
     // Old implementation
-    Ctxt binary_mult(const Ctxt &a, const Ctxt &b, int bits, int repetitions);
+    // Ctxt binary_mult(const Ctxt &a, const Ctxt &b, int bits, int repetitions);
 
     Ctxt binary_or(const Ctxt& a, const Ctxt& b);
     Ctxt binary_and(const Ctxt& a, const Ctxt& b);
 
     Ctxt add_integer(const Ctxt& a, const Ctxt& b, int bits, bool clean_first = false);
     Ctxt sub_integer(const Ctxt &a, const Ctxt &b, int bits, bool clean_first = false);
-
     Ctxt mul_integer(const Ctxt &a, const Ctxt &b, int bits, int bits_original, int repetitions, int repetitions_original, bool overflow);
     Ctxt shf_integer(const Ctxt& a, int shift, int bits);
 
@@ -103,7 +102,7 @@ public:
     Ctxt div_integer(const Ctxt& numerator, const Ctxt& denominator, int bits, int zslots);
     Ctxt div_integer(const Ctxt& numerator, const Ptxt& denonimator, int denbitlength, int lastbiton, int bits, int zslots);
     Ctxt div_integer(const Ctxt& numerator, uint128_t denonimator, int bits, int zslots);
-
+    Ctxt eq_integer(const Ctxt& a, const Ctxt& b, int bits, int zslots);
     Ctxt square_root_integer(const Ctxt& c, int bits, int zslots);
 
 

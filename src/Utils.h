@@ -364,6 +364,19 @@ static inline std::vector<int> comp_simd(vector<uint128_t> a, vector<uint128_t> 
     return result;
 }
 
+static inline std::vector<int> eq_simd(vector<uint128_t> a, vector<uint128_t> b) {
+    vector<int> result;
+
+    for (size_t i = 0; i < a.size(); i++) {
+        if (a[i] == b[i])
+            result.push_back(1);
+        else
+            result.push_back(0);
+    }
+
+    return result;
+}
+
 static inline std::vector<uint128_t> shift_simd(vector<uint128_t> vec, int shift_index) {
     vector<uint128_t> result;
 
@@ -382,6 +395,18 @@ static inline std::vector<double> last_bits(vector<double> vec, int slots, int b
         int b = a + bits;
 
         result.push_back(round(vec[b]));
+    }
+
+    return result;
+}
+
+static inline std::vector<double> first_bits(vector<double> vec, int slots, int bits) {
+    vector<double> result;
+
+    for (int i = 0; i < slots; i++) {
+        int a = (closest_pow2(bits) * closest_pow2(bits) / 2) * i;
+
+        result.push_back(round(vec[a]));
     }
 
     return result;

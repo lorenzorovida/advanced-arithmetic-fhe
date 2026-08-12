@@ -106,7 +106,7 @@ void CKKSController::generate_rotations_for_multiplications(int bits) {
     } else if (bits == 256) {
         generate_rotation_keys_inverse(rot_256_bits);
     } else {
-        cerr << "Unsupported number of bits (" << bits << "), use 16, 32 or 64" << endl;
+        cerr << "Unsupported number of bits (" << bits << "), use 16, 32, 64, 128 or 256" << endl;
         return;
     }
 }
@@ -483,6 +483,7 @@ Ctxt CKKSController::sub_integer(const Ctxt &a, const Ctxt &b, int bits, bool cl
 
 }
 
+/*
 Ctxt CKKSController::binary_mult(const Ctxt &a, const Ctxt &b, int bits, int repetitions) {
     Ctxt result;
 
@@ -588,6 +589,7 @@ Ctxt CKKSController::binary_mult(const Ctxt &a, const Ctxt &b, int bits, int rep
 
     return result;
 }
+*/
 
 Ctxt CKKSController::process_array(const Ctxt& c, const Ctxt& c_processed, const std::vector<std::pair<int,int>>& mask_roll_pairs, int mask_size, int rep, shared_ptr<vector<DCRTPoly>> rot_precomputations) {
     Ctxt c_processed_clone = c_processed->Clone();
@@ -1540,6 +1542,38 @@ Ctxt CKKSController::square_root_integer(const Ctxt &c, int bits, int zslots) {
 
     return binboot(mult(yrot, encode(mask, yrot->GetLevel())));
 }
+
+Ctxt CKKSController::eq_integer(const Ctxt &a, const Ctxt &b, int bits, int zslots) {
+    Ctxt sum = square(sub(a, b));
+    for (int i = 0; i < round(log2(bits)); i++) {
+        sum = add(sum, rot(sum, pow(2, i)));
+    }
+
+    int deg = 119;
+
+    if (bits <= 16) {
+        deg = 59;
+    } else if (bits == 32) {
+        deg = 59;
+    } else if (bits == 64) {
+        deg = 119;
+    } else if (bits == 128) {
+        deg = 223;
+    } else if (bits > 128) {
+        deg = 425;
+    }
+
+    sum = context->EvalChebyshevFunction([](double x) -> double { if (x == 0) return 0; else return sin(x) / x; }, sum, 0, bits, deg);
+
+    vector<double> correction(a->GetSlots());
+    for (uint32_t i = 0; i < zslots; i++)
+        correction[i * (bits * bits) / 2] = 1;
+
+    return binboot(mult(sum, encode(correction, sum->GetLevel())));
+}
+
+
+
 
 void CKKSController::ascon_permutation(Ctxt &S, int zslots) {
     //Assuming 12 round
