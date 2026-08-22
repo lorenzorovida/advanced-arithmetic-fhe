@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.23)
-project(FlexibleIntsCKKS)
+project(AdvancedFHE)
 
 set(CMAKE_CXX_STANDARD 17)
 option( BUILD_STATIC "Set to ON to include static versions of the library" OFF)
@@ -36,10 +36,10 @@ else()
     link_libraries( ${OpenFHE_SHARED_LIBRARIES} )
 endif()
 
-add_executable(FlexibleIntsCKKS src/main.cpp src/CKKSController.cpp src/CKKSController.h src/Utils.h src/Logger.h)
+add_executable(AdvancedFHE src/main.cpp src/CKKSController.cpp src/CKKSController.h src/Utils.h src/Logger.h)
 
 
-target_link_libraries(FlexibleIntsCKKS PRIVATE
+target_link_libraries(AdvancedFHE PRIVATE
         OPENFHEpke
         OPENFHEcore
         OPENFHEbinfhe

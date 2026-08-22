@@ -10,6 +10,7 @@ void CKKSController::generate_context_for_bootstrapping(int ring, int levels) {
 
     depth = levels + FHECKKSRNS::GetBootstrapDepth({3, 3}, lbcrypto::SPARSE_ENCAPSULATED);
 
+
     parameters.SetSecurityLevel(lbcrypto::HEStd_NotSet);
     parameters.SetRingDim(ring);
     parameters.SetNumLargeDigits(3);
@@ -108,6 +109,47 @@ void CKKSController::generate_rotations_for_multiplications(int bits) {
     } else {
         cerr << "Unsupported number of bits (" << bits << "), use 16, 32, 64, 128 or 256" << endl;
         return;
+    }
+}
+
+void CKKSController::generate_precomputations_for_multiplications(int bits, int N) {
+    if (bits > 8) {
+        process_array_precomp({{8, 64}, {12, 80}}, bits, N);
+    }
+
+    if (bits > 16) {
+        process_array_precomp({{16, 256}, {20, 272}, {24, 320}, {28, 336}}, bits, N);
+    }
+
+    if (bits > 32) {
+        process_array_precomp({{32, 1024}, {36, 1040}, {40, 1088}, {44, 1104}, {48, 1280}, {52, 1296}, {56, 1344}, {60, 1360}}, bits, N);
+    }
+
+    if (bits > 64) {
+        process_array_precomp({{64, 4096}, {68, 4112}, {72, 4160}, {76, 4176}, {80, 4352}, {84, 4368}, {88, 4416}, {92, 4432}, {96, 5120}, {100, 5136}, {104, 5184}, {108, 5200}, {112, 5376}, {116, 5392}, {120, 5440}, {124, 5456}}, bits, N);
+    }
+
+    if (bits > 128) {
+        process_array_precomp({{128, 16384}, {132, 16400}, {136, 16448}, {140, 16464},{144, 16640}, {148, 16656}, {152, 16704}, {156, 16720},{160, 17408}, {164, 17424}, {168, 17472}, {172, 17488},{176, 17664}, {180, 17680}, {184, 17728}, {188, 17744},{192, 20480}, {196, 20496}, {200, 20544}, {204, 20560},{208, 20736}, {212, 20752}, {216, 20800}, {220, 20816},{224, 21504}, {228, 21520}, {232, 21568}, {236, 21584},{240, 21760}, {244, 21776}, {248, 21824}, {252, 21840}}, bits, N);
+    }
+    if (bits > 8) {
+        process_array_precomp({{8, 32}, {12, 40}}, bits, N);
+    }
+
+    if (bits > 16) {
+        process_array_precomp({{16, 128}, {20, 136}, {24, 160}, {28, 168}}, bits, N);
+    }
+
+    if (bits > 32) {
+        process_array_precomp({{32, 512}, {36, 520}, {40, 544}, {44, 552}, {48, 640}, {52, 648}, {56, 672}, {60, 680}}, bits, N);
+    }
+
+    if (bits > 64) {
+        process_array_precomp({{64, 2048}, {68, 2056}, {72, 2080}, {76, 2088}, {80, 2176}, {84, 2184}, {88, 2208}, {92, 2216}, {96, 2560}, {100, 2568}, {104, 2592}, {108, 2600}, {112, 2688}, {116, 2696}, {120, 2720}, {124, 2728}}, bits, N);
+    }
+
+    if (bits > 128) {
+        process_array_precomp({{128, 8192}, {132, 8200}, {136, 8224}, {140, 8232}, {144, 8320}, {148, 8328}, {152, 8352}, {156, 8360}, {160, 8704}, {164, 8712}, {168, 8736}, {172, 8744}, {176, 8832}, {180, 8840}, {184, 8864}, {188, 8872}, {192, 10240}, {196, 10248}, {200, 10272}, {204, 10280}, {208, 10368}, {212, 10376}, {216, 10400}, {220, 10408}, {224, 10752}, {228, 10760}, {232, 10784}, {236, 10792}, {240, 10880}, {244, 10888}, {248, 10912}, {252, 10920}}, bits, N);
     }
 }
 
@@ -329,7 +371,7 @@ Ctxt CKKSController::clean(const Ctxt &c) {
     return context->EvalAdd(context->EvalMult(sq, t1), context->EvalMult(sq, 3));
 }
 
-Ctxt CKKSController::mod2shallow(const Ctxt &c) {
+Ctxt CKKSController::mod2shallow(const Ctxt &c, double scale) {
     return context->EvalSub(context->EvalMult(c, 2), context->EvalSquare(c));
 }
 
@@ -398,6 +440,7 @@ Ctxt CKKSController::multiplier4bits(const Ctxt &a, const Ctxt &b, int repetitio
 
 Ctxt CKKSController::majoritybit(const Ctxt &a, const Ctxt &b, const Ctxt &c) {
     Ctxt total = add(add(a, b), c);
+
     Ctxt sq = context->EvalSquare(total);
     Ctxt t1 = mult(total, -1.0/3.0);
 
@@ -408,14 +451,15 @@ Ctxt CKKSController::majoritybit(const Ctxt &a, const Ctxt &b, const Ctxt &c) {
 Ctxt CKKSController::csa4(const Ctxt &a, const Ctxt &b, const Ctxt &c, const Ctxt &d, int bits) {
     Ctxt s1, c1;
     std::tie(s1, c1) = csa3(a, b, c, false);
+
+
     c1 = rot(c1, -1);
 
     Ctxt s2, c2;
     std::tie(s2, c2) = csa3(s1, c1, d, false);
+
     c2 = rot(c2, -1);
-
     Ctxt result = add_integer(s2, c2, bits, false);
-
     return result;
 }
 
@@ -591,8 +635,14 @@ Ctxt CKKSController::binary_mult(const Ctxt &a, const Ctxt &b, int bits, int rep
 }
 */
 
-Ctxt CKKSController::process_array(const Ctxt& c, const Ctxt& c_processed, const std::vector<std::pair<int,int>>& mask_roll_pairs, int mask_size, int rep, shared_ptr<vector<DCRTPoly>> rot_precomputations) {
-    Ctxt c_processed_clone = c_processed->Clone();
+void CKKSController::process_array_precomp(const std::vector<std::pair<int,int>>& mask_roll_pairs, int bits, int N) {
+    int lvl = 12; //Fixed according to the params...
+
+
+    int mask_size = bits * (bits / 2);
+
+    //Assuming full reps?
+    int rep = N / (bits * bits);
 
     for (auto [start, roll_base] : mask_roll_pairs) {
         int total_size = mask_size * rep;
@@ -606,10 +656,24 @@ Ctxt CKKSController::process_array(const Ctxt& c, const Ctxt& c_processed, const
         }
 
         int shift = roll_base - start;
-        Ctxt rolled_ctxt = rot_fast(c, -shift, rot_precomputations);
+
         vector<int> rolled_mask = rot(mask, -shift);
 
-        c_processed_clone = add(c_processed_clone, mult(rolled_ctxt, rolled_mask));
+        processedMasksMult.push_back(encode(rolled_mask, lvl));
+    }
+}
+
+
+
+Ctxt CKKSController::process_array(const Ctxt& c, const Ctxt& c_processed, const std::vector<std::pair<int,int>>& mask_roll_pairs, int mask_size, int rep, shared_ptr<vector<DCRTPoly>> rot_precomputations) {
+    Ctxt c_processed_clone = c_processed->Clone();
+
+    for (auto [start, roll_base] : mask_roll_pairs) {
+        int shift = roll_base - start;
+        Ctxt rolled_ctxt = rot_fast(c, -shift, rot_precomputations);
+        cout << "Rotating by " << -shift << endl;
+        c_processed_clone = add(c_processed_clone, mult(rolled_ctxt, processedMasksMult[indexMap]));
+        indexMap += 1;
     }
 
     return c_processed_clone;
@@ -625,10 +689,10 @@ Ctxt CKKSController::mul_integer(const Ctxt &a, const Ctxt &b, int bits, int bit
 
     Ctxt a_processed, b_processed;
 
-    shared_ptr<vector<DCRTPoly>> a_precomputations = context->EvalFastRotationPrecompute(a);
-    shared_ptr<vector<DCRTPoly>> b_precomputations = context->EvalFastRotationPrecompute(b);
-
     if (bits == 8) {
+        shared_ptr<vector<DCRTPoly>> a_precomputations = context->EvalFastRotationPrecompute(a);
+        shared_ptr<vector<DCRTPoly>> b_precomputations = context->EvalFastRotationPrecompute(b);
+
         int mask_size = bits_original * (bits_original / 2);
 
         vector<int> masklow(a->GetSlots(), 0);
@@ -651,6 +715,9 @@ Ctxt CKKSController::mul_integer(const Ctxt &a, const Ctxt &b, int bits, int bit
         }
 
         a_processed = add(a_processed, mult(rot(a, -(16 - 4)), rot(maskhigh, -(16 - 4))));
+
+
+        indexMap = 0;
 
         if (bits_original > 8) {
             a_processed = process_array(a, a_processed, {{8, 64}, {12, 80}}, mask_size, repetitions_original, a_precomputations);
@@ -716,6 +783,8 @@ Ctxt CKKSController::mul_integer(const Ctxt &a, const Ctxt &b, int bits, int bit
         //auto t = steady_clock::now();
         result = multiplier4bits(bintodec(a_processed, repetitions * 4),
                                  bintodec(b_processed, repetitions * 4), repetitions * 4);
+
+
         //print_duration(t, "4 bits multiplier took: ");
     } else {
         result = mul_integer(a, b, bits / 2, bits_original, 4 * repetitions, repetitions_original, overflow);
@@ -742,27 +811,29 @@ Ctxt CKKSController::mul_integer(const Ctxt &a, const Ctxt &b, int bits, int bit
     }
 
     Ctxt p1 = mult(result, mask1);
+
     Ctxt p2 = rot(p1, -(-rep_size/2 + bits/2));
 
     Ctxt p3, p4;
 
-    if (bits == 8) {
-        p3 = rot(mult(result, mask2), 16);
-    } else {
-        p3 = rot(mult(result, mask2), -(-rep_size / 4 + bits / 2));
-    }
-
+    Ctxt resmask2 = mult(result, mask2);
 
     if (bits == 8) {
-        p4 = rot(p3, -12);
+        p3 = rot(resmask2, 16);
     } else {
-        p4 = rot(mult(result, mask2), (((bits - 2) * (3 * bits - 2)) / 8));
+        p3 = rot(resmask2, -(-rep_size / 4 + bits / 2));
     }
 
-    if (!overflow && bits == bits_original) {
+    if (!overflow && bits == bits_original && bits != 8) {
         pair<Ctxt, Ctxt> out = csa3(p1, p2, p3);
         result = binboot(add_integer(out.first, rot(out.second, -1), bits));
     } else {
+        if (bits == 8) {
+            p4 = rot(p3, -12);
+        } else {
+            p4 = rot(resmask2, (((bits - 2) * (3 * bits - 2)) / 8));
+        }
+
         result = binboot(csa4(p1, p2, p3, p4, bits));
     }
 
@@ -1563,7 +1634,7 @@ Ctxt CKKSController::eq_integer(const Ctxt &a, const Ctxt &b, int bits, int zslo
         deg = 425;
     }
 
-    sum = context->EvalChebyshevFunction([](double x) -> double { if (x == 0) return 0; else return sin(x) / x; }, sum, 0, bits, deg);
+    sum = context->EvalChebyshevFunction([](double x) -> double { if (x == 0) return 1; else return sin(x) / x; }, sum, 0, bits, deg);
 
     vector<double> correction(a->GetSlots());
     for (uint32_t i = 0; i < zslots; i++)

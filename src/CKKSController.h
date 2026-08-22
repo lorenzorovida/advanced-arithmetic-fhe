@@ -31,6 +31,7 @@ public:
     void generate_rotations_for_additions(int bits);
     void generate_rotations_for_multiplications(int bits);
     void generate_rotations_for_bit_length(int bits);
+    void generate_precomputations_for_multiplications(int bits, int N);
 
     Ptxt encode(const vector<double>& vec, int lvl = 0);
     Ptxt encode(const vector<int>& vec, int lvl = 0);
@@ -76,12 +77,13 @@ public:
     Ctxt clean_and_reduce(const Ctxt& c);
     Ctxt clean(const Ctxt& c);
     Ctxt reduce(const Ctxt& c);
-    Ctxt mod2shallow(const Ctxt& c);
+    Ctxt mod2shallow(const Ctxt& c, double scale = 1.0);
     Ctxt bintodec(const Ctxt& c, int repetitions);
     pair<Ctxt, Ctxt> csa3(const Ctxt& a, const Ctxt& b, const Ctxt& c, bool clean_vals = false);
     Ctxt majoritybit(const Ctxt& a, const Ctxt& b, const Ctxt& c);
     Ctxt csa4(const Ctxt& a, const Ctxt& b, const Ctxt& c, const Ctxt& d, int bits);
     Ctxt multiplier4bits(const Ctxt& a, const Ctxt& b, int repetitions);
+    void process_array_precomp(const std::vector<std::pair<int,int>>& mask_roll_pairs, int bits, int N);
     Ctxt process_array(const Ctxt& c, const Ctxt& c_processed, const std::vector<std::pair<int,int>>& mask_roll_pairs, int mask_size, int rep, shared_ptr<vector<DCRTPoly>> rot_precomputations);
 
     // Old implementation
@@ -135,6 +137,14 @@ private:
     KeyPair<DCRTPoly> key_pair; // Key pair for the cryptosystem
     uint32_t slots;
     int depth;
+
+    vector<Ptxt> processedMasksMult;
+    int indexMap;
+
+
+    //Precomputed plaintexts for multipliction
+    Ptxt precompMask1, precompMask2;
+    Ptxt precompMaskLow, precompMaskHigh164, precompMaskHigh4;
 
 };
 
