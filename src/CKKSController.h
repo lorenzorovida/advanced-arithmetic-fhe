@@ -143,7 +143,8 @@ private:
 
 
     //Precomputed plaintexts for multipliction
-    Ptxt precompMask1, precompMask2;
+    unordered_map<int, Ptxt> precompMasksPart2a;
+    unordered_map<int, Ptxt> precompMasksPart2b;
     Ptxt precompMaskLow, precompMaskHigh164, precompMaskHigh4;
 
 };

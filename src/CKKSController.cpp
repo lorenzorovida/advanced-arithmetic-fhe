@@ -638,7 +638,6 @@ Ctxt CKKSController::binary_mult(const Ctxt &a, const Ctxt &b, int bits, int rep
 void CKKSController::process_array_precomp(const std::vector<std::pair<int,int>>& mask_roll_pairs, int bits, int N) {
     int lvl = 12; //Fixed according to the params...
 
-
     int mask_size = bits * (bits / 2);
 
     //Assuming full reps?
@@ -661,11 +660,82 @@ void CKKSController::process_array_precomp(const std::vector<std::pair<int,int>>
 
         processedMasksMult.push_back(encode(rolled_mask, lvl));
     }
+
+    vector<int> masklow(slots, 0);
+    for (int j = 0; j < rep; j++) {
+        masklow[0 + j * mask_size] = 1;
+        masklow[1 + j * mask_size] = 1;
+        masklow[2 + j * mask_size] = 1;
+        masklow[3 + j * mask_size] = 1;
+    }
+
+    precompMaskLow = encode(masklow);
+
+    vector<int> maskhigh(slots, 0);
+
+    for (int j = 0; j < rep; j++) {
+        maskhigh[4 + j * mask_size] = 1;
+        maskhigh[5 + j * mask_size] = 1;
+        maskhigh[6 + j * mask_size] = 1;
+        maskhigh[7 + j * mask_size] = 1;
+    }
+
+    precompMaskHigh164 = encode(rot(maskhigh, -(16 - 4)));
+    precompMaskHigh4 = encode(rot(maskhigh, -4));
+
+    int min_bits = 8;
+    int rep_original = N / (bits * bits);
+
+    if (bits == 16) {
+        rep_original *= 4;
+    }
+    if (bits == 32) {
+        rep_original *= 4;
+    }
+    if (bits == 64) {
+        rep_original *= 4;
+    }
+    if (bits == 128) {
+        rep_original *= 4;
+    }
+    if (bits == 256) {
+        rep_original *= 4;
+    }
+
+    while (min_bits <= bits) {
+        int dunn = (min_bits * min_bits / 8) * 2;
+        int rep_size = min_bits * min_bits / 2;
+
+        vector<double> mask1(slots, 0.0);
+
+        for (int j = 0; j < rep_original; ++j) {
+            for (int i = 0; i < min_bits; ++i) {
+                mask1[(j * rep_size) + i] = 1.0;
+                mask1[(j * rep_size) + i + dunn] = 1.0;
+            }
+        }
+
+        vector<double> mask2(slots, 0.0);
+
+        for (int j = 0; j < rep_original; ++j) {
+            for (int i = 0; i < min_bits; ++i) {
+                mask2[(j * rep_size) + rep_size / 4 + i] = 1.0;
+                mask2[(j * rep_size) + rep_size / 4 + i + dunn] = 1.0;
+            }
+        }
+
+        precompMasksPart2a[min_bits] = encode(mask1);
+        precompMasksPart2b[min_bits] = encode(mask2);
+
+        min_bits *= 2;
+        rep_original /= 4;
+    }
+
 }
 
 
 
-Ctxt CKKSController::process_array(const Ctxt& c, const Ctxt& c_processed, const std::vector<std::pair<int,int>>& mask_roll_pairs, int mask_size, int rep, shared_ptr<vector<DCRTPoly>> rot_precomputations) {
+Ctxt CKKSController::process_array(const Ctxt& c, const Ctxt& c_processed, const std::vector<std::pair<int,int>>& mask_roll_pairs, int mask_size, int rep, shared_ptr<vector<DCRTPoly>> rot_precomputations ) {
     Ctxt c_processed_clone = c_processed->Clone();
 
     for (auto [start, roll_base] : mask_roll_pairs) {
@@ -684,9 +754,6 @@ Ctxt CKKSController::mul_integer(const Ctxt &a, const Ctxt &b, int bits, int bit
 
     int rep_size = bits * bits / 2;
 
-    // The size of the basic multiplicator (8 bits)
-    int base_mult = 8;
-
     Ctxt a_processed, b_processed;
 
     if (bits == 8) {
@@ -695,26 +762,10 @@ Ctxt CKKSController::mul_integer(const Ctxt &a, const Ctxt &b, int bits, int bit
 
         int mask_size = bits_original * (bits_original / 2);
 
-        vector<int> masklow(a->GetSlots(), 0);
-        for (int j = 0; j < repetitions_original; j++) {
-            masklow[0 + j * mask_size] = 1;
-            masklow[1 + j * mask_size] = 1;
-            masklow[2 + j * mask_size] = 1;
-            masklow[3 + j * mask_size] = 1;
-        }
+        a_processed = mult(a, precompMaskLow);
 
-        a_processed = mult(a, masklow);
 
-        vector<int> maskhigh(a->GetSlots(), 0);
-
-        for (int j = 0; j < repetitions_original; j++) {
-            maskhigh[4 + j * mask_size] = 1;
-            maskhigh[5 + j * mask_size] = 1;
-            maskhigh[6 + j * mask_size] = 1;
-            maskhigh[7 + j * mask_size] = 1;
-        }
-
-        a_processed = add(a_processed, mult(rot(a, -(16 - 4)), rot(maskhigh, -(16 - 4))));
+        a_processed = add(a_processed, mult(rot(a, -(16 - 4)), precompMaskHigh164));
 
 
         indexMap = 0;
@@ -748,8 +799,8 @@ Ctxt CKKSController::mul_integer(const Ctxt &a, const Ctxt &b, int bits, int bit
 
         // B //
 
-        b_processed = mult(b, masklow);
-        b_processed = add(b_processed, mult(rot(b, - 4), rot(maskhigh,  - 4)));
+        b_processed = mult(b, precompMaskLow);
+        b_processed = add(b_processed, mult(rot(b, - 4), precompMaskHigh4));
 
         if (bits_original > 8) {
             b_processed = process_array(b, b_processed, {{8, 32}, {12, 40}}, mask_size, repetitions_original, b_precomputations);
@@ -790,33 +841,15 @@ Ctxt CKKSController::mul_integer(const Ctxt &a, const Ctxt &b, int bits, int bit
         result = mul_integer(a, b, bits / 2, bits_original, 4 * repetitions, repetitions_original, overflow);
     }
 
-    int dunn = (bits * bits / base_mult) * 2;
 
-    vector<double> mask1(a->GetSlots(), 0.0);
 
-    for (int j = 0; j < repetitions; ++j) {
-        for (int i = 0; i < bits; ++i) {
-            mask1[(j * rep_size) + i] = 1.0;
-            mask1[(j * rep_size) + i + dunn] = 1.0;
-        }
-    }
-
-    vector<double> mask2(a->GetSlots(), 0.0);
-
-    for (int j = 0; j < repetitions; ++j) {
-        for (int i = 0; i < bits; ++i) {
-            mask2[(j * rep_size) + rep_size / 4 + i] = 1.0;
-            mask2[(j * rep_size) + rep_size / 4 + i + dunn] = 1.0;
-        }
-    }
-
-    Ctxt p1 = mult(result, mask1);
+    Ctxt p1 = mult(result, precompMasksPart2a[bits]);
 
     Ctxt p2 = rot(p1, -(-rep_size/2 + bits/2));
 
     Ctxt p3, p4;
 
-    Ctxt resmask2 = mult(result, mask2);
+    Ctxt resmask2 = mult(result, precompMasksPart2b[bits]);
 
     if (bits == 8) {
         p3 = rot(resmask2, 16);
