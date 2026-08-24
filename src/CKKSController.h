@@ -146,6 +146,7 @@ private:
     unordered_map<int, Ptxt> precompMasksPart2a;
     unordered_map<int, Ptxt> precompMasksPart2b;
     Ptxt precompMaskLow, precompMaskHigh164, precompMaskHigh4;
+    Ptxt precompMinus1, precomp13, precomp32, precomp76, precomp2;
 
 };
 

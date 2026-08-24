@@ -372,7 +372,7 @@ Ctxt CKKSController::clean(const Ctxt &c) {
 }
 
 Ctxt CKKSController::mod2shallow(const Ctxt &c, double scale) {
-    return context->EvalSub(context->EvalMult(c, 2), context->EvalSquare(c));
+    return context->EvalSub(context->EvalMult(c, precomp2), context->EvalSquare(c));
 }
 
 Ctxt CKKSController::bintodec(const Ctxt &c, int repetitions) {
@@ -418,7 +418,7 @@ std::pair<Ctxt, Ctxt> CKKSController::csa3(const Ctxt &a, const Ctxt &b, const C
 
 Ctxt CKKSController::multiplier4bits(const Ctxt &a, const Ctxt &b, int repetitions) {
     Ctxt result = mult(a, b);
-    result = add(result, -1);
+    result = add(result, precompMinus1);
 
     vector<vector<double>> coeffs;
 
@@ -442,9 +442,9 @@ Ctxt CKKSController::majoritybit(const Ctxt &a, const Ctxt &b, const Ctxt &c) {
     Ctxt total = add(add(a, b), c);
 
     Ctxt sq = context->EvalSquare(total);
-    Ctxt t1 = mult(total, -1.0/3.0);
+    Ctxt t1 = mult(total, precomp13);
 
-    return add(add(mult(t1, sq), mult(sq, 3.0/2.0)), mult(total, -7.0/6.0));
+    return add(add(mult(t1, sq), mult(sq, precomp32)), mult(total, precomp76));
 
 }
 
@@ -731,6 +731,12 @@ void CKKSController::process_array_precomp(const std::vector<std::pair<int,int>>
         rep_original /= 4;
     }
 
+    precompMinus1 = encode(-1, 1);
+    precomp32 = encode(3.0 / 2.0, 1);
+    precomp76 = encode(-7.0 / 6.0, 1);
+    precomp13 = encode(-1.0 / 3.0, 1);
+    precomp2 = encode(2, 1);
+
 }
 
 
@@ -741,7 +747,6 @@ Ctxt CKKSController::process_array(const Ctxt& c, const Ctxt& c_processed, const
     for (auto [start, roll_base] : mask_roll_pairs) {
         int shift = roll_base - start;
         Ctxt rolled_ctxt = rot_fast(c, -shift, rot_precomputations);
-        cout << "Rotating by " << -shift << endl;
         c_processed_clone = add(c_processed_clone, mult(rolled_ctxt, processedMasksMult[indexMap]));
         indexMap += 1;
     }
@@ -766,8 +771,6 @@ Ctxt CKKSController::mul_integer(const Ctxt &a, const Ctxt &b, int bits, int bit
 
 
         a_processed = add(a_processed, mult(rot(a, -(16 - 4)), precompMaskHigh164));
-
-
         indexMap = 0;
 
         if (bits_original > 8) {

@@ -492,6 +492,9 @@ void random_operations_batched(int bits) {
 
     //a = { 201, 240, 254, 139, 152, 215, 32, 210, 182, 152, 174, 225, 150, 79, 76, 163, 78, 15, 209, 20, 71, 200, 103, 102, 130, 22, 144, 123, 78, 81, 2, 226, 159, 138, 187, 18, 141, 69, 141, 101, 213, 218, 128, 187, 55, 71, 218, 62, 190, 170, 215, 178, 215, 191, 191, 239, 226, 42, 10, 202, 159, 240, 20, 160 };
     //b = { 74, 223, 20, 41, 0, 219, 204, 159, 252, 195, 127, 187, 129, 17, 28, 17, 59, 166, 112, 152, 200, 160, 126, 121, 115, 158, 19, 64, 133, 240, 132, 111, 75, 234, 124, 183, 27, 1, 206, 35, 74, 0, 122, 52, 131, 40, 150, 92, 140, 141, 9, 192, 157, 64, 179, 202, 208, 17, 184, 86, 145, 64, 143, 19 };
+    //a = {15156, 28708, 41704, 46469, 30961, 48084, 34112, 33859, 43114, 22259, 46172, 11048, 22707, 37764, 38525, 33850};
+    //b = {63871, 63045, 46605, 19526, 7301, 26500, 37975, 13923, 39433, 1130, 52586, 54314, 29762, 32718, 64035, 25465};
+
 
     log(1) << "a: " << to_string_uint128(a) << endl << "b: " << to_string_uint128(b) << endl << endl;
 
@@ -530,7 +533,6 @@ void random_operations_batched(int bits) {
     Ctxt cmultmod = cc.mul_integer(c1, c2, bits, bits, slots, slots, false);
 
     log.info(1) << "Multiplication (a * b) % 2^n" << endl;
-    cc.print(cmultmod, 1 << 11);
     log(2) << "Expected: " << to_string_uint128(mul_simd(a, b, bits)) << endl;
     log(2) << "Obtained: " << cc.print_ints(cmultmod, bits, slots) << endl;
     if (verbose >= 3) print_duration(time, "Multiplication took: ");
@@ -651,8 +653,6 @@ void random_operations(int bits) {
     time = steady_clock::now();
 
     Ctxt cmultmod = cc.mul_integer(c1, c2, bits, bits, 1, 1, false);
-    cc.print(c1, 8);
-    cc.print(cmultmod, 8);
 
     log(1) << "Multiplication (a * b) % 2^n" << endl;
     log(2) << "Expected (" << bits << " bits): " << to_string_uint128((a * b) & ((uint128_t(1) << bits) - 1)) << endl;
