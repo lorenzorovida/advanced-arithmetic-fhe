@@ -643,6 +643,7 @@ void CKKSController::process_array_precomp(const std::vector<std::pair<int,int>>
     //Assuming full reps?
     int rep = N / (bits * bits);
 
+
     for (auto [start, roll_base] : mask_roll_pairs) {
         int total_size = mask_size * rep;
 
@@ -686,19 +687,19 @@ void CKKSController::process_array_precomp(const std::vector<std::pair<int,int>>
     int min_bits = 8;
     int rep_original = N / (bits * bits);
 
-    if (bits == 16) {
+    if (bits >= 16) {
         rep_original *= 4;
     }
-    if (bits == 32) {
+    if (bits >= 32) {
         rep_original *= 4;
     }
-    if (bits == 64) {
+    if (bits >= 64) {
         rep_original *= 4;
     }
-    if (bits == 128) {
+    if (bits >= 128) {
         rep_original *= 4;
     }
-    if (bits == 256) {
+    if (bits >= 256) {
         rep_original *= 4;
     }
 
