@@ -325,7 +325,7 @@ void experiment_noise_estimate() {
     result_vector = cc.decode(cc.decrypt(result));
 
     //Slots in (relative) position 0 are equal to 1, let's correct them
-    for (uint32_t i = 0; i < zslots; i++) result_vector[i * (bits * bits) / 2] -= 1;
+    for (int i = 0; i < zslots; i++) result_vector[i * (bits * bits) / 2] -= 1;
 
     for (double & i : result_vector) {
         i = abs(i);
