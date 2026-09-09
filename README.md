@@ -7,7 +7,7 @@
 <!--<img src="imgs/console.gif" width="750"/>-->
 <img src="imgs/terminal.gif" width="750">
 
-<sup><sub>(To replicate this toy example, simply run `./FlexibleIntsCKKS --ring 12 --bits 64` after installation) </sub></sup>
+<sup><sub>(To replicate this toy example, simply run `./AdvancedFHE --ring 12 --bits 64` after installation) </sub></sup>
 
 ---
 
@@ -74,19 +74,19 @@ make
 3. Finally, you can test if everything works by running
 
 ```
-./FlexibleIntsCKKS --test
+./AdvancedFHE --test
 ```
 
 
 ## Custom parameters
-There are three parameters that can be passed to `./FlexibleIntsCKKS`
+There are three parameters that can be passed to `./AdvancedFHE`
 
 1) `--ring <size>`
 
 Sets the (logarithm of the) ring size. `<size>` must be an integer in (12, 13, 14, 15, 16).
 Example:
 ```
-./FlexibleIntsCKKS --ring 16
+./AdvancedFHE --ring 16
 ```
 
 2) `--bits <bits>` 
@@ -95,7 +95,7 @@ Sets the word size (number of bits per word). Only the following values are supp
 If an unsupported value is provided, the program will display an error.
 Example:
 ```
-./FlexibleIntsCKKS --bits 64
+./AdvancedFHE --bits 64
 ```
 
 3) `--verbose <value>` 
@@ -103,7 +103,7 @@ Example:
 Sets the verbosity level of program output. `<value>` must be either 0, 1 or 2. Higher numbers mean more detailed output.
 Example:
 ```
-./FlexibleIntsCKKS --verbose 2
+./AdvancedFHE --verbose 2
 ```
 
 4) `--input`
@@ -115,18 +115,18 @@ Sets the program in input mode, i.e., the program will ask you to set the number
 #### Toy parameters
 You can test 64-bits operation, in the $N=2^{12}$ ring, with the following code:
 ```
-./FlexibleIntsCKKS --ring 12 --bits 64
+./AdvancedFHE --ring 12 --bits 64
 ```
 This allows to test the code in a unsecure environment, useful if playing around with the code.
 
 #### More secure parameters
 You can test 64-bits operation, in the $N=2^{16}$ ring, with the following code:
 ```
-./FlexibleIntsCKKS --ring 16 --bits 64
+./AdvancedFHE --ring 16 --bits 64
 ```
 
 #### Input mode
 You can use the program and manually insert some values to operate on
 ```
-./FlexibleIntsCKKS --ring 12 --input
+./AdvancedFHE --ring 12 --input
 ```
