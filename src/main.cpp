@@ -11,7 +11,7 @@ using namespace std;
 using namespace chrono;
 
 CKKSController cc;
-int ring_size = 14;
+int ring_size = 16;
 int verbose = 3;
 int wordsize = 64;
 
@@ -23,6 +23,9 @@ bool mev = false;
 bool ascon = false;
 bool noise_estimate = false;
 
+bool noise_itob = false;
+bool noise_btoi_itob = false;
+
 void read_arguments(int argc, char* argv[]);
 void random_operations(int bits);
 void random_operations_batched(int bits);
@@ -33,6 +36,8 @@ void experiment_hash_ascon();
 void experiment_mev();
 void experiment_noise_estimate();
 
+void experiment_ItoB();
+void experiment_BtoI_ItoB();
 
 int main(int argc, char* argv[]) {
     read_arguments(argc, argv);
@@ -44,6 +49,8 @@ int main(int argc, char* argv[]) {
     cc.generate_rotations_for_bit_length(wordsize);
     cc.generate_precomputations_for_multiplications(wordsize, cc.get_context()->GetRingDimension());
 
+
+    noise_btoi_itob = true;
 
     if (mev) {
         experiment_mev();
@@ -59,6 +66,18 @@ int main(int argc, char* argv[]) {
         experiment_noise_estimate();
         exit(0);
     }
+
+    if (noise_itob) {
+        experiment_ItoB();
+        exit(0);
+    }
+
+    if (noise_btoi_itob) {
+        experiment_BtoI_ItoB();
+        exit(0);
+    }
+
+
     /*
      * Experiments
      */
@@ -475,6 +494,212 @@ void experiment_noise_conversion() {
     cout << setprecision(20) << cc.decrypt(resultpoly)->GetRealPackedValue()[0] << endl;
 }
 
+void experiment_BtoI_ItoB() {
+    vector<int> v;
+
+    wordsize = 8;
+
+    int zslots = cc.get_context()->GetRingDimension() / 2;
+
+    for (int i = 0; i < zslots; i++ ) {
+        std::mt19937 rng(std::random_device{}());
+        std::uniform_int_distribution<int> dist(0, 1);
+        int n = dist(rng);
+        v.push_back(n);
+    }
+
+    Ctxt bckks = cc.encrypt(v, startinglevel);
+
+
+
+
+    vector<double> initialNoise;
+    for (int i = 0; i < cc.get_context()->GetRingDimension() / 2; i++) {
+        std::random_device rd;
+        std::mt19937 gen(rd());
+        //By enlarging Delta we can make the noise larger, but we do not really care at this stage
+        std::uniform_real_distribution<double> dist(-0.00001, 0.00001);
+
+        double x = dist(gen);
+        initialNoise.push_back(x);
+    }
+
+    bckks = cc.add(bckks, cc.encode(initialNoise));
+
+    /*
+     * B-to-I
+     */
+    vector<double> mask;
+
+    for (int i = 0; i < zslots / 8; i++) {
+        //Turning off 32 as 256-32=224, which is roughly the same interval as the one we use ([0, 225])
+        mask.insert(mask.end(), {1, 2, 4, 8, 16, 0, 64, 128});
+    }
+
+    cc.print(bckks, 2048);
+
+    Ctxt ickks = cc.mult(bckks, mask);
+
+    cc.print(ickks, 2048);
+
+    ickks = cc.add(ickks, cc.rot(ickks, 1));
+    ickks = cc.add(ickks, cc.rot(ickks, 2));
+    ickks = cc.add(ickks, cc.rot(ickks, 4));
+
+
+
+    vector<double> mask2;
+
+
+
+    for (int i = 0; i < zslots / 8; i++) {
+        mask2.insert(mask2.end(), {2/225.0, 0, 0, 0, 0, 0, 0, 0});
+    }
+
+    ickks = cc.mult(ickks, mask2);
+
+    cc.print(ickks, 2048);
+
+    vector<double> mask3;
+    for (int i = 0; i < zslots / 8; i++) {
+        mask3.insert(mask3.end(), {-1, 0, 0, 0, 0, 0, 0, 0});
+    }
+
+    ickks = cc.add(ickks, cc.encode(mask3));
+
+    cout << "PRIOR Input to polys: " << endl;
+    cc.print(ickks, 2048);
+
+    ickks = cc.add(ickks, cc.rot(ickks, -1));
+    ickks = cc.add(ickks, cc.rot(ickks, -2));
+    ickks = cc.add(ickks, cc.rot(ickks, -4));
+
+    cout << "Input to polys: " << endl;
+    cc.print(ickks, 2048);
+
+
+    //I-to-B
+
+    vector<vector<double>> coeffs;
+    coeffs.push_back(read_vector_file("../coeffs/p1-norm-369.txt"));
+    coeffs.push_back(read_vector_file("../coeffs/p2-norm-369.txt"));
+    coeffs.push_back(read_vector_file("../coeffs/p3-norm-369.txt"));
+    coeffs.push_back(read_vector_file("../coeffs/p4-norm-369.txt"));
+    coeffs.push_back(read_vector_file("../coeffs/p5-norm-369.txt"));
+    coeffs.push_back(read_vector_file("../coeffs/p6-norm-369.txt"));
+    coeffs.push_back(read_vector_file("../coeffs/p7-norm-369.txt"));
+    coeffs.push_back(read_vector_file("../coeffs/p8-norm-369.txt"));
+
+    Ctxt resultpoly = cc.get_context()->EvalChebyshevSeriesPSBatchRepeated(ickks, coeffs, -1, 1,  cc.get_context()->GetRingDimension() / 16);
+
+    resultpoly = cc.binboot(resultpoly);
+    resultpoly = cc.clean(resultpoly);
+
+    //cc.print(resultpoly, 128);
+
+    vector<double> res = cc.decrypt(resultpoly)->GetRealPackedValue();
+    vector<double> realres;
+    for (auto i = 0; i < res.size(); i++) {
+        if (res[i] > 0.5) realres.push_back(1); else realres.push_back(0);
+    }
+
+    cout << res << endl;
+
+    double inf_norm = 0.0;
+    for (size_t i = 0; i < res.size(); ++i) {
+        inf_norm = std::max(inf_norm, std::abs(res[i] - realres[i]));
+    }
+
+    vector<double> initialres = cc.decrypt(bckks)->GetRealPackedValue();
+    vector<double> initialrealres;
+    for (auto i = 0; i < res.size(); i++) {
+        if (initialres[i] > 0.5) initialrealres.push_back(1); else initialrealres.push_back(0);
+    }
+
+    double original_inf_norm = 0.0;
+    for (size_t i = 0; i < res.size(); ++i) {
+        original_inf_norm = std::max(original_inf_norm, std::abs(initialrealres[i] - initialres[i]));
+    }
+
+    cout << "Infinity norm from " << original_inf_norm << " to " << inf_norm << endl;
+}
+
+void experiment_ItoB() {
+    vector<int> v;
+
+    wordsize = 8;
+
+    int zslots = cc.get_context()->GetRingDimension() / (2 * wordsize);
+
+    for (int i = 0; i < zslots; i++ ) {
+        std::mt19937 rng(std::random_device{}());
+        std::uniform_int_distribution<int> dist(0, 225);
+        int n = dist(rng);
+        v.push_back(n);
+    }
+
+    vector<double> toBeEncoded;
+
+    for (size_t i = 0; i < v.size(); i++) {
+        double val = 2 * (v[i] / 225.0) - 1;
+        for (int j = 0; j < 8; j++)
+        toBeEncoded.push_back(val);
+    }
+
+    cout << toBeEncoded << endl;
+
+    Ctxt zckks = cc.encrypt(toBeEncoded, startinglevel);
+
+    vector<double> initialNoise;
+    for (int i = 0; i < cc.get_context()->GetRingDimension() / 2; i++) {
+        std::random_device rd;
+        std::mt19937 gen(rd());
+        std::uniform_real_distribution<double> dist(-0.01, 0.01);
+
+        double x = dist(gen);
+        initialNoise.push_back(x);
+    }
+
+    //zckks = cc.add(zckks, cc.encode(initialNoise));
+
+    //cc.print(zckks, 128);
+
+    vector<vector<double>> coeffs;
+    coeffs.push_back(read_vector_file("../coeffs/p1-norm-369.txt"));
+    coeffs.push_back(read_vector_file("../coeffs/p2-norm-369.txt"));
+    coeffs.push_back(read_vector_file("../coeffs/p3-norm-369.txt"));
+    coeffs.push_back(read_vector_file("../coeffs/p4-norm-369.txt"));
+    coeffs.push_back(read_vector_file("../coeffs/p5-norm-369.txt"));
+    coeffs.push_back(read_vector_file("../coeffs/p6-norm-369.txt"));
+    coeffs.push_back(read_vector_file("../coeffs/p7-norm-369.txt"));
+    coeffs.push_back(read_vector_file("../coeffs/p8-norm-369.txt"));
+
+    Ctxt resultpoly = cc.get_context()->EvalChebyshevSeriesPSBatchRepeated(zckks, coeffs, -1, 1,  cc.get_context()->GetRingDimension() / 16);
+
+    //resultpoly = cc.binboot(resultpoly);
+
+    //cc.print(resultpoly, 128);
+
+    vector<double> res = cc.decrypt(resultpoly)->GetRealPackedValue();
+    vector<double> realres;
+    for (auto i = 0; i < res.size(); i++) {
+        if (res[i] > 0.5) realres.push_back(1); else realres.push_back(0);
+    }
+
+    cout << res << endl;
+
+    double inf_norm = 0.0;
+    for (size_t i = 0; i < res.size(); ++i) {
+        inf_norm = std::max(inf_norm, std::abs(res[i] - realres[i]));
+    }
+
+    double max_val = -std::numeric_limits<double>::infinity();
+    for (double x : initialNoise)
+        if (x > max_val) max_val = x;
+
+    cout << "Infinity norm from " << max_val << " to " << inf_norm << endl;
+}
+
 void random_operations_batched(int bits) {
     int slots = cc.get_context()->GetRingDimension() / (bits * bits);
 
@@ -492,8 +717,8 @@ void random_operations_batched(int bits) {
 
     //a = { 201, 240, 254, 139, 152, 215, 32, 210, 182, 152, 174, 225, 150, 79, 76, 163, 78, 15, 209, 20, 71, 200, 103, 102, 130, 22, 144, 123, 78, 81, 2, 226, 159, 138, 187, 18, 141, 69, 141, 101, 213, 218, 128, 187, 55, 71, 218, 62, 190, 170, 215, 178, 215, 191, 191, 239, 226, 42, 10, 202, 159, 240, 20, 160 };
     //b = { 74, 223, 20, 41, 0, 219, 204, 159, 252, 195, 127, 187, 129, 17, 28, 17, 59, 166, 112, 152, 200, 160, 126, 121, 115, 158, 19, 64, 133, 240, 132, 111, 75, 234, 124, 183, 27, 1, 206, 35, 74, 0, 122, 52, 131, 40, 150, 92, 140, 141, 9, 192, 157, 64, 179, 202, 208, 17, 184, 86, 145, 64, 143, 19 };
-    //a = {15156, 28708, 41704, 46469, 30961, 48084, 34112, 33859, 43114, 22259, 46172, 11048, 22707, 37764, 38525, 33850};
-    //b = {63871, 63045, 46605, 19526, 7301, 26500, 37975, 13923, 39433, 1130, 52586, 54314, 29762, 32718, 64035, 25465};
+    //a = { 15156, 28708, 41704, 46469, 30961, 48084, 34112, 33859, 43114, 22259, 46172, 11048, 22707, 37764, 38525, 33850};
+    //b = { 63871, 63045, 46605, 19526, 7301, 26500, 37975, 13923, 39433, 1130, 52586, 54314, 29762, 32718, 64035, 25465};
 
 
     log(1) << "a: " << to_string_uint128(a) << endl << "b: " << to_string_uint128(b) << endl << endl;
@@ -564,12 +789,14 @@ void random_operations_batched(int bits) {
 
     time = steady_clock::now();
 
+
     Ctxt cdiv = cc.div_integer(c1, c2, bits, slots);
     log.info(1) << "Quotient (a / b)" << endl;
     log(2) << "Expected: " << to_string_uint128(div_simd(a, b)) << endl;
     log(2) << "Obtained: " << cc.print_ints(cdiv, bits, slots) << endl;
     if (verbose >= 3) print_duration(time, "Quotient took: ");
     log(1) << "-----" << endl;
+
 
     time = steady_clock::now();
 
@@ -686,6 +913,7 @@ void random_operations(int bits) {
 
     time = steady_clock::now();
 
+
     Ctxt cdiv = cc.div_integer(c1, c2, bits, 1);
 
     log(1) << "Quotient (a/b)" << endl;
@@ -693,6 +921,7 @@ void random_operations(int bits) {
     log(2) << "Obtained: " << to_string_uint128(bits_to_int128(cc.decode(cc.decrypt(cdiv)), bits)) << endl;
     if (verbose >= 1) print_duration(time, "Quotient took: ");
     log(1) << "-----" << endl;
+
 
     time = steady_clock::now();
 
@@ -702,6 +931,8 @@ void random_operations(int bits) {
     log(2) << "Expected: " << to_string_uint128(sqrt(a)) << endl;
     log(2) << "Obtained: " << to_string_uint128(bits_to_int128(cc.decode(cc.decrypt(csqrt)), bits)) << endl;
     if (verbose >= 1) print_duration(time, "Square root took: ");
+
+
 
 
     log(1) << endl << endl;
@@ -744,6 +975,12 @@ void read_arguments(int argc, char* argv[]) {
         }
         if (arg == "--input") {
             input_mode = true;
+        }
+        if (arg == "--itob") {
+            noise_itob = true;
+        }
+        if (arg == "--btoi-itob") {
+            noise_btoi_itob = true;
         }
     }
 }

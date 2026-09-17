@@ -235,6 +235,8 @@ Ctxt CKKSController::encrypt_multi_int(vector<uint128_t> val, int bits, int lvl)
     return encrypt(toBeEncoded, lvl);
 }
 
+
+
 Ctxt CKKSController::encrypt_multi_int_nonpowtwo(vector<uint128_t> val, int bits, int maxslots, int lvl) {
     vector<int> toBeEncoded;
 
@@ -434,6 +436,7 @@ Ctxt CKKSController::multiplier4bits(const Ctxt &a, const Ctxt &b, int repetitio
     Ctxt resultpoly = context->EvalChebyshevSeriesPSBatchRepeated(result, coeffs, -1, 1, repetitions);
 
     resultpoly = binboot(resultpoly);
+    resultpoly = clean(resultpoly);
 
     return resultpoly;
 }
@@ -1363,7 +1366,9 @@ Ctxt CKKSController::square_root_integer(const Ctxt &c, int bits, int zslots) {
         coeffs[127] = coeffs[78];
     }
 
+
     Ctxt x = get_context()->EvalChebyshevSeriesPSBatchRepeated(idx, coeffs, 0, 256, (int)(idx->GetSlots() / coeffs.size()));
+
 
     if (bits == 16) {
         //Slots 14, 16, 17 must be empty as polynomials there are null (so PS returns something that is not correct)
@@ -1439,24 +1444,30 @@ Ctxt CKKSController::square_root_integer(const Ctxt &c, int bits, int zslots) {
     if (verbose) cout << "Output of LUT: " << print_ints(x, bits+2, zslots) << endl;
 
 
-    for (int i = 0; i < ceil(log2(bits / LUT_BITS)) - 1; i++) {
+    for (int i = 0; i < ceil(log2(bits / LUT_BITS)); i++) {
         /*
          * x2 = (x * x) >> F
          */
         Ctxt x2 = mul_integer(x, x, bits, bits, zslots, zslots, true);
+
+
         x2 = rot(x2, bits);
         x2 = rot(x2, -1);
         if (verbose) cout << "x2: " << print_ints(x2, bits, 1) << endl;
+
         /*
          * mx2 = (m * x2) >> bits
          */
         Ctxt mx2 = mul_integer(hatx_clone, x2, bits, bits, zslots, zslots, true);
+
         mx2 = rot(mx2, bits);
         if (verbose) cout << "MX2 FACTORS: " << print_ints(hatx_clone, bits, 1) << ", " << print_ints(x2, bits, 1) << endl;
         if (verbose) cout << "mx2: " << print_ints(mx2, bits, 1) << endl;
         /*
          * term1 = (3 << F) - mx2
          */
+
+
         vector<uint128_t> a(zslots);
         for (uint32_t j = 0; j < a.size(); j++) a[j] = 3;
         //for (int j = 0; j < (2 * get_context()->GetRingDimension() / (bits * bits)) - 1; j++) {
@@ -1481,9 +1492,11 @@ Ctxt CKKSController::square_root_integer(const Ctxt &c, int bits, int zslots) {
             for (int z = 0; z < bits * 2; z++) mask[z + j * stride] = 1;
         }
 
-        Ctxt inverted = context->EvalSub(encrypt(encode(mask, mx2->GetLevel())), mx2);
-        Ctxt term1 = binboot(add_integer(const3f, inverted, bits * 2, false));
 
+
+        Ctxt inverted = context->EvalSub(encrypt(encode(mask, mx2->GetLevel())), mx2);
+
+        Ctxt term1 = binboot(add_integer(const3f, inverted, bits * 2, false));
 
 
 
@@ -1538,8 +1551,10 @@ Ctxt CKKSController::square_root_integer(const Ctxt &c, int bits, int zslots) {
         if (verbose) cout << "T1 lo: " << print_ints(term1_lo, bits, 1) << endl;
 
 
+
         Ctxt xpartial = mul_integer(x, term1_lo, bits, bits, zslots, zslots, true);
         xpartial = rot(xpartial, bits);
+
 
         fill(mask.begin(), mask.end(), 0.0);
         for (int j = 0; j < zslots; j++) {
@@ -1548,6 +1563,7 @@ Ctxt CKKSController::square_root_integer(const Ctxt &c, int bits, int zslots) {
         }
         xpartial = mult(xpartial, mask);
 
+
         if (verbose) cout << "xpartial: " << print_ints(xpartial, bits, 1) << endl;
         xpartial = add_integer(xpartial, term1_hi, bits, false);
 
@@ -1555,6 +1571,8 @@ Ctxt CKKSController::square_root_integer(const Ctxt &c, int bits, int zslots) {
 
 
         if (verbose) cout << "x: " << print_ints(x, bits, 1) << endl;
+
+
 
     }
 
@@ -1914,6 +1932,7 @@ Ctxt CKKSController::bootstrap(const Ctxt &c) {
     //cout << "Lv after: " << cboot->GetLevel() << endl;
     return cboot;
 }
+
 
 Ctxt CKKSController::binboot(const Ctxt &c) {
     //cout << "Input level : " << c->GetLevel() << endl;
