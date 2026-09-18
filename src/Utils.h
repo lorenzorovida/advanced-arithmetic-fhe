@@ -355,7 +355,7 @@ static inline std::vector<int> comp_simd(vector<uint128_t> a, vector<uint128_t> 
     vector<int> result;
 
     for (size_t i = 0; i < a.size(); i++) {
-        if (a[i] <= b[i])
+        if (a[i] >= b[i])
             result.push_back(1);
         else
             result.push_back(0);
@@ -394,7 +394,7 @@ static inline std::vector<double> last_bits(vector<double> vec, int slots, int b
         int a = (closest_pow2(bits) * closest_pow2(bits) / 2) * i;
         int b = a + bits;
 
-        result.push_back(round(vec[b]));
+        result.push_back(round(vec[b]) + 0.0);
     }
 
     return result;
@@ -406,7 +406,8 @@ static inline std::vector<double> first_bits(vector<double> vec, int slots, int 
     for (int i = 0; i < slots; i++) {
         int a = (closest_pow2(bits) * closest_pow2(bits) / 2) * i;
 
-        result.push_back(round(vec[a]));
+
+        result.push_back(round(vec[a] + 0.0));
     }
 
     return result;

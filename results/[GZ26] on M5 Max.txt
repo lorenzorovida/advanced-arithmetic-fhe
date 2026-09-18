@@ -1,0 +1,155 @@
+@JD2MFP99WG-MacBook-Pro-2 build % ./bin/examples/pke/benchmark-full 32 bench
+Scaling Factor: 43 bits
+Auxiliary Prime Size: 50 bits
+Level Budget: 3 2
+Multiplicative Depth: 20
+CKKS scheme ring dimension: 65536
+log2(Q) = 904 log2(P) = 350 log2(QP) = 1254
+Bootstrapping parameters: zN = 32, zSlots = 2048
+Arith ct DecryptResult:
+Value[0]: ?
+Value[1]: ?
+Value[2]: ?
+Value[3]: ?
+... (total 2048 slots)
+logMaxNoise: -25.6613
+level: 0
+Scaling factor log2: 43
+Encoding type: ZMode
+Bool ct DecryptResult:
+Value[0]: ?
+Value[1]: ?
+Value[2]: ?
+Value[3]: ?
+... (total 2048 slots)
+logMaxNoise: -23.1179
+level: 0
+Scaling factor log2: 43
+Encoding type: BModeFull
+MultFull Current Noise -21.852, Difference: 3.80924
+Finished Warmup for MultFull 0.287555 s
+Time for MultFull : 0.0315433 s
+BooleanOR Current Noise -22.8591, Difference: 2.80219
+Finished Warmup for BooleanOR 0.252551 s
+Time for BooleanOR : 0.12606 s
+B2A Current Noise -23.7932, Difference: 1.86806
+Finished Warmup for B2A 1.1243 s
+Time for B2A : 0.543599 s
+B2B Current Noise -20.5008, Difference: 2.61712
+Finished Warmup for B2B 9.11609 s
+Time for B2B : 3.35972 s
+A2AI Current Noise -26.0181, Difference: -0.0323307
+Finished Warmup for A2AI 4.79073 s
+Time for A2AI : 2.82898 s
+A2Ae Current Noise -24.7202, Difference: 1.26554
+Finished Warmup for A2Ae 6.29928 s
+Time for A2Ae : 4.5812 s
+A2A Current Noise -24.3611, Difference: 1.62467
+Finished Warmup for A2A 9.08006 s
+Time for A2A : 8.96551 s
+^C
+demouser@JD2MFP99WG-MacBook-Pro-2 build % ./bin/examples/pke/benchmark-full 64 bench
+Scaling Factor: 43 bits
+Auxiliary Prime Size: 50 bits
+Level Budget: 3 2
+Multiplicative Depth: 20
+CKKS scheme ring dimension: 65536
+log2(Q) = 904 log2(P) = 350 log2(QP) = 1254
+Bootstrapping parameters: zN = 64, zSlots = 1024
+Arith ct DecryptResult:
+Value[0]: ?
+Value[1]: ?
+Value[2]: ?
+Value[3]: ?
+... (total 1024 slots)
+logMaxNoise: -26.4029
+level: 0
+Scaling factor log2: 43
+Encoding type: ZMode
+Bool ct DecryptResult:
+Value[0]: ?
+Value[1]: ?
+Value[2]: ?
+Value[3]: ?
+... (total 1024 slots)
+logMaxNoise: -22.8768
+level: 0
+Scaling factor log2: 43
+Encoding type: BModeFull
+MultFull Current Noise -22.3747, Difference: 4.02817
+Finished Warmup for MultFull 0.441217 s
+Time for MultFull : 0.0320061 s
+BooleanOR Current Noise -22.8492, Difference: 3.55368
+Finished Warmup for BooleanOR 0.253811 s
+Time for BooleanOR : 0.127889 s
+B2A Current Noise -23.8513, Difference: 2.5516
+Finished Warmup for B2A 2.07483 s
+Time for B2A : 0.940241 s
+B2B Current Noise -20.4546, Difference: 2.42221
+Finished Warmup for B2B 9.55623 s
+Time for B2B : 3.4527 s
+A2AI Current Noise -26.533, Difference: 0.186948
+Finished Warmup for A2AI 6.88378 s
+Time for A2AI : 5.43682 s
+A2Ae Current Noise -24.6549, Difference: 2.06503
+Finished Warmup for A2Ae 8.26197 s
+Time for A2Ae : 6.77154 s
+A2A Current Noise -24.5493, Difference: 2.17069
+Finished Warmup for A2A 12.4961 s
+Time for A2A : 12.3699 s
+B-A2B-0 Current Noise -20.988, Difference: 5.41489
+B-A2B-1 Current Noise -21.0021, Difference: 5.71789
+Finished Warmup for B-A2B 113.941 s
+Time for B-A2B : 100.39 s
+A2B Current Noise -19.8056, Difference: 6.91433
+Finished Warmup for A2B 51.9047 s
+Time for A2B : 50.9825 s
+demouser@JD2MFP99WG-MacBook-Pro-2 build % ./bin/examples/pke/benchmark-full 128 bench
+Scaling Factor: 43 bits
+Auxiliary Prime Size: 50 bits
+Level Budget: 3 2
+Multiplicative Depth: 20
+CKKS scheme ring dimension: 65536
+log2(Q) = 904 log2(P) = 350 log2(QP) = 1254
+Bootstrapping parameters: zN = 128, zSlots = 512
+Arith ct DecryptResult:
+Value[0]: ?
+Value[1]: ?
+Value[2]: ?
+Value[3]: ?
+... (total 512 slots)
+logMaxNoise: -27.1042
+level: 0
+Scaling factor log2: 43
+Encoding type: ZMode
+Bool ct DecryptResult:
+Value[0]: ?
+Value[1]: ?
+Value[2]: ?
+Value[3]: ?
+... (total 512 slots)
+logMaxNoise: -23.0378
+level: 0
+Scaling factor log2: 43
+Encoding type: BModeFull
+MultFull Current Noise -23.1039, Difference: 4.00034
+Finished Warmup for MultFull 0.788794 s
+Time for MultFull : 0.0332441 s
+BooleanOR Current Noise -22.7384, Difference: 4.36577
+Finished Warmup for BooleanOR 0.264928 s
+Time for BooleanOR : 0.13335 s
+B2A Current Noise -23.6887, Difference: 3.41554
+Finished Warmup for B2A 4.45354 s
+Time for B2A : 1.41616 s
+B2B Current Noise -20.6418, Difference: 2.39603
+Finished Warmup for B2B 9.69058 s
+Time for B2B : 4.30864 s
+A2AI Current Noise -26.6634, Difference: 0.231497
+Finished Warmup for A2AI 9.91419 s
+Time for A2AI : 6.59921 s
+A2Ae Current Noise -24.6429, Difference: 2.25206
+Finished Warmup for A2Ae 25.4228 s
+Time for A2Ae : 7.72308 s
+A2A Current Noise -24.7039, Difference: 2.19101
+Finished Warmup for A2A 14.9602 s
+Time for A2A : 14.4943

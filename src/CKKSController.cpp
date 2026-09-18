@@ -472,7 +472,7 @@ Ctxt CKKSController::binary_or(const Ctxt &a, const Ctxt &b) {
 }
 
 
-Ctxt CKKSController::add_integer(const Ctxt &a, const Ctxt &b, int bits, bool clean_first) {
+Ctxt CKKSController::add_integer(const Ctxt &a, const Ctxt &b, int bits, bool clean_first, bool carry_in) {
     Ctxt p;
 
     if (clean_first) {
@@ -484,6 +484,20 @@ Ctxt CKKSController::add_integer(const Ctxt &a, const Ctxt &b, int bits, bool cl
     Ctxt absum = p->Clone();
 
     Ctxt g = mult(a, b);
+
+    if (carry_in) {
+        //g[-1] = 1
+        int s = context->GetRingDimension() / (bits * bits);
+        vector<int> carry_mask;
+        for (int i = 0; i < s; i++) {
+            carry_mask.push_back(1);
+            for (int j = 0; j < bits * bits / 2 - 1; j++) {
+                carry_mask.push_back(0);
+            }
+        }
+
+        g = add(g, encode(rot(carry_mask, 1), g->GetLevel()));
+    }
 
     for (int i = 1; i < bits; i *= 2) {
         Ctxt p_shift = rot(p, -i);
@@ -501,33 +515,24 @@ Ctxt CKKSController::add_integer(const Ctxt &a, const Ctxt &b, int bits, bool cl
     return s;
 }
 
-Ctxt CKKSController::sub_integer(const Ctxt &a, const Ctxt &b, int bits, bool clean_first) {
+Ctxt CKKSController::sub_integer(const Ctxt &a, const Ctxt &b, int bits, bool clean_first, bool carryin) {
     vector<double> ones;
 
     int s = context->GetRingDimension() / (bits * bits);
 
     for (int i = 0; i < s; i++) {
-        for (int j = 0; j < bits + 1; j++) {
+        for (int j = 0; j < bits; j++) {
             ones.push_back(1);
         }
-        for (int j = 0; j < bits * bits / 2 - bits - 1; j++) {
+        for (int j = 0; j < bits * bits / 2 - bits; j++) {
             ones.push_back(0);
         }
     }
 
     Ctxt inverted = context->EvalSub(encrypt(encode(ones, b->GetLevel())), b);
-    inverted = add_integer(a, inverted, bits, clean_first);
+    inverted = add_integer(a, inverted, bits, clean_first, carryin);
 
-    //Cleaning garbage (NEW)
-    vector<double> mask(inverted->GetSlots());
-    fill(mask.begin(), mask.end(), 0.0);
-    for (int i = 0; i < s; i++) {
-        int stride = bits * bits / 2;
-        for (int j = 0; j < bits; j++) mask[stride * i + j] = 1;
-    }
-
-    return mult(inverted, encode(mask, inverted->GetLevel()));
-
+    return inverted;
 }
 
 /*
@@ -1639,7 +1644,7 @@ Ctxt CKKSController::square_root_integer(const Ctxt &c, int bits, int zslots) {
     for (uint32_t i = 0; i < a.size(); i++) a[i] = bits + 1;
     Ctxt finalshift = encrypt_multi_int(a, bits, y->GetLevel());
 
-    finalshift = binboot(sub_integer(finalshift, s, bits)); //This should contain bit_length
+    finalshift = binboot(sub_integer(finalshift, s, bits, false, false)); //This should contain bit_length
     finalshift = rot(finalshift, 1);
 
     if (verbose) cout << "HA BL/2?: " << print_ints(finalshift, bits, 1) << endl;
@@ -1678,9 +1683,9 @@ Ctxt CKKSController::eq_integer(const Ctxt &a, const Ctxt &b, int bits, int zslo
     int deg = 119;
 
     if (bits <= 16) {
-        deg = 59;
+        deg = 119;
     } else if (bits == 32) {
-        deg = 59;
+        deg = 119;
     } else if (bits == 64) {
         deg = 119;
     } else if (bits == 128) {

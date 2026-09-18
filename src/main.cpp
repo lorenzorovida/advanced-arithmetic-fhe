@@ -11,9 +11,9 @@ using namespace std;
 using namespace chrono;
 
 CKKSController cc;
-int ring_size = 16;
+int ring_size = 12;
 int verbose = 3;
-int wordsize = 64;
+int wordsize = 32;
 
 int startinglevel = 12;
 
@@ -48,9 +48,6 @@ int main(int argc, char* argv[]) {
     cc.generate_rotations_for_multiplications(wordsize);
     cc.generate_rotations_for_bit_length(wordsize);
     cc.generate_precomputations_for_multiplications(wordsize, cc.get_context()->GetRingDimension());
-
-
-    noise_btoi_itob = true;
 
     if (mev) {
         experiment_mev();
@@ -715,12 +712,6 @@ void random_operations_batched(int bits) {
         b.push_back(random_number(bits));
     }
 
-    //a = { 201, 240, 254, 139, 152, 215, 32, 210, 182, 152, 174, 225, 150, 79, 76, 163, 78, 15, 209, 20, 71, 200, 103, 102, 130, 22, 144, 123, 78, 81, 2, 226, 159, 138, 187, 18, 141, 69, 141, 101, 213, 218, 128, 187, 55, 71, 218, 62, 190, 170, 215, 178, 215, 191, 191, 239, 226, 42, 10, 202, 159, 240, 20, 160 };
-    //b = { 74, 223, 20, 41, 0, 219, 204, 159, 252, 195, 127, 187, 129, 17, 28, 17, 59, 166, 112, 152, 200, 160, 126, 121, 115, 158, 19, 64, 133, 240, 132, 111, 75, 234, 124, 183, 27, 1, 206, 35, 74, 0, 122, 52, 131, 40, 150, 92, 140, 141, 9, 192, 157, 64, 179, 202, 208, 17, 184, 86, 145, 64, 143, 19 };
-    //a = { 15156, 28708, 41704, 46469, 30961, 48084, 34112, 33859, 43114, 22259, 46172, 11048, 22707, 37764, 38525, 33850};
-    //b = { 63871, 63045, 46605, 19526, 7301, 26500, 37975, 13923, 39433, 1130, 52586, 54314, 29762, 32718, 64035, 25465};
-
-
     log(1) << "a: " << to_string_uint128(a) << endl << "b: " << to_string_uint128(b) << endl << endl;
 
     Ctxt c1 = cc.encrypt_multi_int(a, bits, startinglevel);
@@ -738,9 +729,18 @@ void random_operations_batched(int bits) {
     time = steady_clock::now();
 
     Ctxt csub = cc.binboot(cc.sub_integer(c1, c2, bits));
-    log.info(1) << "Comparison (a ≤ b)" << endl;
+    log.info(1) << "Subtraction (a - b)" << endl;
+    log(2) << "Expected: " << to_string_uint128(sub_simd(a, b, bits)) << endl;
+    log(2) << "Obtained: " << cc.print_ints(csub, bits, slots) << endl;
+    if (verbose >= 3) print_duration(time, "Subtraction took: ");
+    log(1) << "-----" << endl;
+
+    time = steady_clock::now();
+
+    Ctxt ccomp = cc.binboot(cc.sub_integer(c1, c2, bits));
+    log.info(1) << "Comparison (a ≥ b)" << endl;
     log(2) << "Expected: " << comp_simd(a, b) << endl;
-    log(2) << "Obtained: " << last_bits(cc.decode(cc.decrypt(csub)), slots, bits) << endl;
+    log(2) << "Obtained: " << last_bits(cc.decode(cc.decrypt(ccomp)), slots, bits) << endl;
     if (verbose >= 3) print_duration(time, "Comparison took: ");
     log(1) << "-----" << endl;
 
@@ -859,12 +859,19 @@ void random_operations(int bits) {
     if (verbose >= 1) print_duration(time, "Addition took: ");
     log(1) << "-----" << endl;
 
+    Ctxt csub = cc.binboot(cc.sub_integer(c1, c2, bits));
+    log(1) << "Subtraction (a - b)" << endl;
+    log(2) << "Expected: " << to_string_uint128(a - b) << endl;
+    log(2) << "Obtained: " << to_string_uint128(bits_to_int128(cc.decode(cc.decrypt(csub)), bits)) << endl;
+    if (verbose >= 1) print_duration(time, "Addition took: ");
+    log(1) << "-----" << endl;
+
     time = steady_clock::now();
 
-    Ctxt csub = cc.binboot(cc.sub_integer(c1, c2, bits));
-    log(1) << "Comparison (a ≤ b)" << endl;
-    log(2) << "Expected: " << (a <= b) << endl;
-    log(2) << "Obtained: " << cc.decode(cc.decrypt(csub))[bits] << endl;
+    Ctxt ccomp = cc.binboot(cc.sub_integer(c1, c2, bits));
+    log(1) << "Comparison (a ≥ b)" << endl;
+    log(2) << "Expected: " << (a >= b) << endl;
+    log(2) << "Obtained: " << cc.decode(cc.decrypt(ccomp))[bits] << endl;
     if (verbose >= 1) print_duration(time, "Comparison took: ");
     log(1) << "-----" << endl;
 
