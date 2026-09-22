@@ -20,6 +20,7 @@ int startinglevel = 12;
 bool test = false;
 bool input_mode = false;
 bool mev = false;
+bool uniswapv3 = false;
 bool ascon = false;
 bool noise_estimate = false;
 
@@ -34,6 +35,7 @@ void experiment_division(int bits);
 void experiment_squareroot(int bits);
 void experiment_hash_ascon();
 void experiment_mev();
+void experiment_uniswap_v3();
 void experiment_noise_estimate();
 
 void experiment_ItoB();
@@ -74,6 +76,10 @@ int main(int argc, char* argv[]) {
         exit(0);
     }
 
+    if (uniswapv3) {
+        experiment_uniswap_v3();
+        exit(0);
+    }
 
     /*
      * Experiments
@@ -251,6 +257,123 @@ void experiment_mev() {
     Ctxt result = cc.div_integer(squareroot, 997, bits, 1);
 
     cout << "[(sqrt(X * Y * g * ext) - X) / g]: " << cc.print_ints(result, bits, 1) << endl;
+}
+
+void experiment_uniswap_v3() {
+    /*
+     * The code is poorly optimized, but the overall complexity is given by the following operations:
+     *
+     * 1x 128-bit multiplication
+     * 1x 128-bit division as multiplication (N.b. in the code the division has been split in two as it wasn't working... will fix it)
+     * 1x 64-bit addition
+     * 1x 128-bit division
+     * 1x 128-bit subtraction
+     * 1x 128-bit multiplication
+     * 1x 128-bit division as multiplication
+     *
+     * Using data from [Rov26], on a NVIDIA L40S this would theoretically require
+     * 622ms + 622 ms + 57ms + 6.7s + 57ms + 622ms + 622ms = 9.7 seconds roughly
+     *
+     * On the same hardware, the same operations in TFHE would cost
+     * 2073ms + 2073ms + 146ms + 36.8s + 146ms + 2073ms + 2037ms = 45.3 seconds roughly
+     *
+     * This would correpsond to a 4.6x improvement simply by changing the scheme
+     *
+     * (Notice that there is no difference between ciphertext/ciphertext and ciphertext/plaintext operations)
+     */
+    int bits = 128;
+
+    vector<uint128_t> g_num_inv_L_fx;
+    g_num_inv_L_fx.push_back(43315879362536242);
+
+    vector<uint128_t> user_amount;
+    user_amount.push_back(3750000000000000000);
+
+    vector<uint128_t> g_den_Y_prec;
+    g_den_Y_prec.push_back(1000000000000000000ULL * 1000); // This is 1000000000000000000000
+
+    vector<uint128_t> inv_sqrt_P0_fx;
+    inv_sqrt_P0_fx.push_back(515557995982445430);
+
+    // The precomputed numerator scaled by 2^32
+    vector<uint128_t> numerator;
+    numerator.push_back((static_cast<uint128_t>(1823591698684026ULL) << 64)
+                          | 9043734471353827328ULL);
+
+    vector<uint128_t> m_fx;
+    m_fx.push_back((static_cast<uint128_t>(15188443ULL) << 64)
+                   | 3405228930222675476ULL);
+
+    vector<uint128_t> g_den;
+    g_den.push_back(1000);
+
+    vector<uint128_t> g_num;
+    g_num.push_back(997);
+
+
+
+    for (uint32_t i = 0; i < cc.get_context()->GetRingDimension() / (bits * bits) - 1; i++) {
+        //Filling the rest of slots with zeroes
+        g_num_inv_L_fx.push_back(0);
+        user_amount.push_back(0);
+        g_den_Y_prec.push_back(0);
+        inv_sqrt_P0_fx.push_back(0);
+        numerator.push_back(0);
+        g_den.push_back(0);
+    }
+
+
+    Ctxt g_num_inv_L_fx_ciph = cc.encrypt_multi_int(g_num_inv_L_fx, 128, 10);
+    Ctxt user_amount_ciph = cc.encrypt_multi_int(user_amount, 128, 10);
+    Ctxt g_den_Y_prec_ciph = cc.encrypt_multi_int(g_den_Y_prec, 128, 10);
+    Ctxt inv_sqrt_P0_fx_ciph = cc.encrypt_multi_int(inv_sqrt_P0_fx, 128, 10);
+    Ctxt numerator_ciph = cc.encrypt_multi_int(numerator, 128, 10);
+    Ctxt m_fx_ciph = cc.encrypt_multi_int(m_fx, 128, 10);
+    Ctxt g_den_ciph = cc.encrypt_multi_int(g_den, 128, 10);
+
+
+    cout << "g_num_inv_L_fx_ciph: " << cc.print_ints(g_num_inv_L_fx_ciph, 128, 1) << endl <<
+         "user_amount: " << cc.print_ints(user_amount_ciph, 128, 1) << endl <<
+         "g_den_Y_prec: " << cc.print_ints(g_den_Y_prec_ciph, 128, 1) << endl <<
+         "inv_sqrt_P0_fx: " << cc.print_ints(inv_sqrt_P0_fx_ciph, 128, 1) << endl <<
+         "numerator: " << cc.print_ints(numerator_ciph, 128, 1) << endl;
+
+    cout << "*****" << endl;
+    // This is correct
+    Ctxt term2_fx = cc.mul_integer(user_amount_ciph, g_num_inv_L_fx_ciph, 128, 128, 1, 1, false);
+
+    // 1000000000000000000000 = 2^21 \cdot 5^21
+    cc.generate_rotation_key(21);
+    term2_fx = cc.rot(term2_fx, 21);
+
+    // 5^21 = 476837158203125 = 9765625 * 48828125
+    term2_fx = cc.div_integer(term2_fx, 9765625, 128, 1);
+    term2_fx = cc.div_integer(term2_fx, 48828125, 128, 1);
+
+    // Appearantly the code fails if I divide directly with 476837158203125... must be an issue in the data represntation, whatever
+
+    cout << "term2_fx: " << cc.print_ints(term2_fx, 64, 1) << endl;
+
+    Ctxt u_fx = cc.binboot(cc.add_integer(term2_fx, inv_sqrt_P0_fx_ciph, 64));
+
+    cout << "u_fx: " << cc.print_ints(u_fx, 64, 1) << endl;
+
+
+    Ctxt X_post_fx = cc.binboot(cc.div_integer(numerator_ciph, u_fx, 128, 1));
+    cc.generate_rotation_key(-32);
+    X_post_fx = cc.rot(X_post_fx, -32);
+
+    cout << "X_post_fx: " << cc.print_ints(X_post_fx, 128, 1) << endl;
+
+    Ctxt diff_fx = cc.binboot(cc.sub_integer(m_fx_ciph, X_post_fx, 128));
+
+    cout << "diff_fx: " << cc.print_ints(diff_fx, 128, 1) << endl;
+
+    Ctxt amount_fx = cc.mul_integer(diff_fx, g_den_ciph, 128, 128, 1, 1, false);
+    amount_fx = cc.div_integer(amount_fx, 997, 128, 1);
+
+    cout << "Amount_fx: " << cc.print_ints(amount_fx, 128, 1) << endl;
+
 }
 
 void experiment_squareroot(int bits) {
@@ -789,8 +912,18 @@ void random_operations_batched(int bits) {
 
     time = steady_clock::now();
 
+    uint128_t div = 42;
+    Ctxt cdiv = cc.div_integer(c1, div, bits, slots);
+    log.info(1) << "Quotient plaintext (a / 42)" << endl;
+    log(2) << "Expected: " << to_string_uint128(div_simd(a, div)) << endl;
+    log(2) << "Obtained: " << cc.print_ints(cdiv, bits, slots) << endl;
+    if (verbose >= 3) print_duration(time, "Quotient took: ");
+    log(1) << "-----" << endl;
 
-    Ctxt cdiv = cc.div_integer(c1, c2, bits, slots);
+    time = steady_clock::now();
+
+
+    cdiv = cc.div_integer(c1, c2, bits, slots);
     log.info(1) << "Quotient (a / b)" << endl;
     log(2) << "Expected: " << to_string_uint128(div_simd(a, b)) << endl;
     log(2) << "Obtained: " << cc.print_ints(cdiv, bits, slots) << endl;
@@ -973,6 +1106,9 @@ void read_arguments(int argc, char* argv[]) {
         }
         if (arg == "--mev") {
             mev = true;
+        }
+        if (arg == "--uniswapv3") {
+            uniswapv3 = true;
         }
         if (arg == "--hash") {
             ascon = true;

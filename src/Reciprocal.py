@@ -8,6 +8,7 @@ def int_to_bits_lsb(x, width=None):
         width = max(1, x.bit_length())
     return np.array([(x >> i) & 1 for i in range(width)], dtype=np.uint8)
 
+
 bits = int(sys.argv[1])
 b = int(sys.argv[2])
 

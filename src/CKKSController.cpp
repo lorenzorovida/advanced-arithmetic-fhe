@@ -1136,13 +1136,10 @@ Ctxt CKKSController::div_integer(const Ctxt &num, const Ctxt &den, int bits, int
 
         if (verbose) cout << "Hint: " << print_ints(x, bits * 2, 2) << endl;
 
-
     }
 
     if (verbose) cout << "Final hint : " << print_ints(x, bits * 2, 2) << endl;
 
-
-    //TODO fixa questa e siamo a posto con anche SIMD :)
 
     Ctxt result = mul_integer(rot(num, 2), rot(x, 2), bits, bits, zslots, zslots, true);
 

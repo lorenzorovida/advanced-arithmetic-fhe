@@ -437,6 +437,16 @@ static inline std::vector<uint128_t> div_simd(vector<uint128_t> a, vector<uint12
     return result;
 }
 
+static inline std::vector<uint128_t> div_simd(vector<uint128_t> a, uint128_t b) {
+    vector<uint128_t> result;
+
+    for (size_t i = 0; i < a.size(); i++) {
+        result.push_back(a[i] / b);
+    }
+
+    return result;
+}
+
 static inline uint128_t isqrt(uint128_t n) {
     if (n == 0) return 0;
     uint128_t x = n;
