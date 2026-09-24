@@ -19,6 +19,10 @@ A single C++17 binary, `AdvancedFHE`. The rest is data, notebooks and results.
 `./scripts/run_benchmarks.sh [outdir] [runs]`, with env `RINGS` (12..16), `BITS`, `WORKLOADS` (ops, decompose, uniswapv3).
 It runs hyperfine per (ring, workload, bits), subtracts `--test` keygen, and parses the per-op "took" lines and the Expected/Obtained
 pairs from `--verbose 3` output. Output is `results.csv`.
+Compiler: `install.sh` defaults to clang with libomp. With gcc, libgomp rebuilds its thread team on every change in width
+(openfhe #1300): ring-14 uniswapv3 at 128 threads took 954 s with gcc and 283 s with clang.
+Best machine measured: c4d-highcpu-32 (1-socket Zen5), with 16 threads bound one per core. Ring 14 uniswapv3 took 150 s there,
+ring 16 took 709 s, and SMT made it 26% slower. On n2-standard-128, 4 concurrent 16-thread processes, each bound to its own socket, ran only about 5% slower each.
 Threads: it defaults to `OMP_NUM_THREADS=16`. Ring-14 uniswapv3 on n2-standard-128 took 954 s at 128 threads versus 262 s at 16,
 and 32 threads, pinned or not, gave 263 s. `-march=native` gave no gain. `PROFILE=1 ./scripts/install.sh` adds `[profile]` per-step timers.
 At 16 threads the time splits into bootstrap 54%, other homomorphic ops about 30%, Chebyshev 10%, encoding 4%, and setup plus LUT reads 2%. At ring 12 with 4 cores: ops/16 about 185 s, decompose about 9 s.
