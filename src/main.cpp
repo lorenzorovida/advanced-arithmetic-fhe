@@ -20,9 +20,16 @@ int startinglevel = 12;
 bool test = false;
 bool input_mode = false;
 bool mev = false;
+
+/*
+ * For the MEV pipeline
+ */
 bool uniswapv3 = false;
+bool decompose = false;
+
 bool ascon = false;
 bool noise_estimate = false;
+
 
 bool noise_itob = false;
 bool noise_btoi_itob = false;
@@ -36,7 +43,9 @@ void experiment_squareroot(int bits);
 void experiment_hash_ascon();
 void experiment_mev();
 void experiment_uniswap_v3();
+void experiment_decompose();
 void experiment_noise_estimate();
+
 
 void experiment_ItoB();
 void experiment_BtoI_ItoB();
@@ -78,6 +87,11 @@ int main(int argc, char* argv[]) {
 
     if (uniswapv3) {
         experiment_uniswap_v3();
+        exit(0);
+    }
+
+    if (decompose) {
+        experiment_decompose();
         exit(0);
     }
 
@@ -258,6 +272,59 @@ void experiment_mev() {
 
     cout << "[(sqrt(X * Y * g * ext) - X) / g]: " << cc.print_ints(result, bits, 1) << endl;
 }
+
+void experiment_decompose() {
+    vector<int> random_inputs;
+
+    std::random_device rd;
+    std::mt19937 randgen(rd());
+
+    std::uniform_int_distribution<int> dist(0, 255);
+
+    int zslots = cc.get_context()->GetRingDimension() / (2 * 8);
+
+    for (int i = 0; i < zslots; i++) {
+        int val = dist(randgen);
+        random_inputs.push_back(val);
+        random_inputs.push_back(val);
+        random_inputs.push_back(val);
+        random_inputs.push_back(val);
+        random_inputs.push_back(val);
+        random_inputs.push_back(val);
+        random_inputs.push_back(val);
+        random_inputs.push_back(val);
+    }
+
+    Ctxt ciphertext = cc.encrypt(random_inputs);
+
+    cout << "Preview of the first 100 elements: " << endl;
+    cc.print(ciphertext, 100);
+
+    /*
+     * Decomposing via Chebyshev
+     */
+    vector<vector<double>> coeffs;
+    coeffs.push_back(read_vector_file("../coeffs/Decompose8bits/p1-451.txt"));
+    coeffs.push_back(read_vector_file("../coeffs/Decompose8bits/p2-451.txt"));
+    coeffs.push_back(read_vector_file("../coeffs/Decompose8bits/p3-451.txt"));
+    coeffs.push_back(read_vector_file("../coeffs/Decompose8bits/p4-451.txt"));
+    coeffs.push_back(read_vector_file("../coeffs/Decompose8bits/p5-451.txt"));
+    coeffs.push_back(read_vector_file("../coeffs/Decompose8bits/p6-451.txt"));
+    coeffs.push_back(read_vector_file("../coeffs/Decompose8bits/p7-451.txt"));
+    coeffs.push_back(read_vector_file("../coeffs/Decompose8bits/p8-451.txt"));
+
+    auto time = steady_clock::now();
+
+    Ctxt resultpoly = cc.get_context()->EvalChebyshevSeriesPSBatchRepeated(ciphertext, coeffs, 0, 255, zslots);
+    resultpoly = cc.binboot(resultpoly);
+
+    print_duration(time, "Decomposing + bootstrapping took: ");
+
+    cout << "Result, decomposed: ";
+    cc.print(resultpoly, 100);
+    cout << endl;
+}
+
 
 void experiment_uniswap_v3() {
     /*
@@ -835,6 +902,9 @@ void random_operations_batched(int bits) {
         b.push_back(random_number(bits));
     }
 
+    //a = {(uint128_t)12345 << 64};
+    //b = {(uint128_t)12345 << 64};
+
     log(1) << "a: " << to_string_uint128(a) << endl << "b: " << to_string_uint128(b) << endl << endl;
 
     Ctxt c1 = cc.encrypt_multi_int(a, bits, startinglevel);
@@ -1124,6 +1194,9 @@ void read_arguments(int argc, char* argv[]) {
         }
         if (arg == "--btoi-itob") {
             noise_btoi_itob = true;
+        }
+        if (arg == "--decompose") {
+            decompose = true;
         }
     }
 }

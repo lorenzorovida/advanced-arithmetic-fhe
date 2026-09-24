@@ -1071,6 +1071,7 @@ Ctxt CKKSController::div_integer(const Ctxt &num, const Ctxt &den, int bits, int
         //Ctxt term = mul_integer(x, den_norm, bits * 2, bits * 2, 1, 1, true);
         Ctxt term = mul_integer(x, den_norm, bits, bits, zslots, zslots, true);
 
+
         if (verbose) cout << "Hint: " << print_ints(term, bits * 2 , 2) << endl;
 
         //Now we must add rot(den_norm * lastbitofx, -bits) THE BIT 128
@@ -1087,6 +1088,7 @@ Ctxt CKKSController::div_integer(const Ctxt &num, const Ctxt &den, int bits, int
         term = binboot(add_integer(term, lastBit, bits, false));
 
         if (verbose) cout << "Hint: " << print_ints(term, bits * 2, 2) << endl;
+
 
         //Now we must add rot(den_norm * lastbitofx, -bits) THE BIT 129 as x can have bits + 2 bits at most (experiment
         //observed, use b = 1 to see
@@ -1137,6 +1139,8 @@ Ctxt CKKSController::div_integer(const Ctxt &num, const Ctxt &den, int bits, int
         if (verbose) cout << "Hint: " << print_ints(x, bits * 2, 2) << endl;
 
     }
+
+    return x;
 
     if (verbose) cout << "Final hint : " << print_ints(x, bits * 2, 2) << endl;
 
