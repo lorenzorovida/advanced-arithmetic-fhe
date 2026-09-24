@@ -23,6 +23,17 @@ pairs from `--verbose 3` output. Output is `results.csv`. At ring 12 with 4 core
 ## Known correctness issues (upstream, as of fa364f7)
 - fa364f7 left a debug `return x;` in ct/ct `div_integer`, which returned the Newton hint. Removed on branch `jpp_improvements`.
 - At ring 12 / 16 bits: plaintext division (`a / 42`) and `square_root_integer` give wrong values (smoke run, 8/10 checks passed).
+- Fixed on `jpp_improvements`: the 128-bit division LUTs were named `-BITS-`, but the code loads `-bits-`, which only works
+  on case-insensitive macOS (7b213dc). `Reciprocal.py` needed an undocumented numpy, so plaintext division silently used
+  an empty reciprocal (da324e5).
+
+## TODO (after the ring-16 VM run on da324e5 completes, so the benchmarked SHA stays fixed)
+- [ ] **Plaintext division, multi-slot.** `div_integer(ct, uint128_t)` (CKKSController.cpp:1222) is correct only in slot 0.
+      Every other slot comes out at about 0.66x the expected value (ring 12, 16 bits: 1173 correct, then 971 vs 1479, 144 vs 220, ...).
+      Uniswap uses zslots=1, so it is unaffected. Suspect the zslots/replication of the reciprocal mask.
+      Repro: `cd build && ./AdvancedFHE --ring 12 --bits 16 --verbose 3`, section "Quotient plaintext (a / 42)".
+- [ ] **`g_den_Y_prec` overflow.** main.cpp:360 has `1000000000000000000ULL * 1000`, which wraps in uint64 to 3875820019684212736
+      instead of 10^21. Fix: `(uint128_t)1000000000000000000ULL * 1000`. It is encrypted and printed but never used, so results don't change.
 - GPU port: github.com/lorenzorovida/FIDESlib-chebyshevSIMD, branch `uniswapv3`, with host program lorenzorovida/advanced-arithmetic-fhe-cuda.
   Fixes are on local branches `jpp_gpu_uniswap_fix` in /workspace/jopasserat/{FIDESlib-chebyshevSIMD,advanced-arithmetic-fhe-cuda}.
 
