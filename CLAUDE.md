@@ -18,7 +18,10 @@ A single C++17 binary, `AdvancedFHE`. The rest is data, notebooks and results.
 ## Benchmarks
 `./scripts/run_benchmarks.sh [outdir] [runs]`, with env `RINGS` (12..16), `BITS`, `WORKLOADS` (ops, decompose, uniswapv3).
 It runs hyperfine per (ring, workload, bits), subtracts `--test` keygen, and parses the per-op "took" lines and the Expected/Obtained
-pairs from `--verbose 3` output. Output is `results.csv`. At ring 12 with 4 cores: ops/16 about 185 s, decompose about 9 s.
+pairs from `--verbose 3` output. Output is `results.csv`.
+Threads: it defaults to `OMP_NUM_THREADS=16`. Ring-14 uniswapv3 on n2-standard-128 took 954 s at 128 threads versus 262 s at 16,
+and 32 threads, pinned or not, gave 263 s. `-march=native` gave no gain. `PROFILE=1 ./scripts/install.sh` adds `[profile]` per-step timers.
+At 16 threads the time splits into bootstrap 54%, other homomorphic ops about 30%, Chebyshev 10%, encoding 4%, and setup plus LUT reads 2%. At ring 12 with 4 cores: ops/16 about 185 s, decompose about 9 s.
 
 ## Known correctness issues (upstream, as of fa364f7)
 - fa364f7 left a debug `return x;` in ct/ct `div_integer`, which returned the Newton hint. Removed on branch `jpp_improvements`.

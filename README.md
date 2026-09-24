@@ -100,6 +100,10 @@ RINGS="12 14 16" BITS="32 64" WORKLOADS="ops decompose uniswapv3" ./scripts/run_
 
 This uses [hyperfine](https://github.com/sharkdp/hyperfine) to time one process per (ring, workload, bits). By default it covers rings 12 to 16, the batched `ops` run at 64 bits, `--decompose`, and `--uniswapv3` (ring 14 and up only).
 Key generation happens in every process, so `--test` is timed for each (ring, bits), and `median_net` subtracts it.
+The script defaults to `OMP_NUM_THREADS=16`. OpenFHE parallelises over RNS limbs, and on a 128-vCPU VM the OpenMP default of one thread
+per vCPU made uniswapv3 3.6x slower than 16 threads. Use the same setting when running `./AdvancedFHE` by hand.
+For a per-step breakdown (setup, LUT file reads, plaintext encoding, batched Chebyshev, bootstrapping), build with
+`PROFILE=1 ./scripts/install.sh`: the binary then prints `[profile]` lines at exit, and `results.csv` includes them.
 The script also parses the per-operation timings the program prints and checks each Expected/Obtained pair. Everything goes into `<outdir>/results.csv`, next to `env.txt`, `hyperfine.json` and the raw logs.
 Parameters use `HEStd_NotSet`, so no ring size carries a security guarantee. Ring 16 needs tens of GB of RAM.
 
