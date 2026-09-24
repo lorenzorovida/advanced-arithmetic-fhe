@@ -9,6 +9,7 @@
 #   RINGS="12 13 14 15 16"   log2(N). The CLI accepts 12..16 (README "Custom parameters").
 #   BITS="64"                word sizes for the `ops` workload (8 16 32 64 128 256)
 #   WORKLOADS="ops decompose uniswapv3"
+#   WRAPPER="numactl --cpunodebind=0 --membind=0"   optional prefix for every AdvancedFHE run
 #
 # Workloads:
 #   ops        default mode: add, sub, compare, eq, mul, shift, div, sqrt ... on N/bits^2 words
@@ -57,6 +58,8 @@ mkdir -p "$OUTDIR/logs"
     echo "rings=$RINGS"
     echo "bits=$BITS"
     echo "workloads=$WORKLOADS"
+    echo "omp_num_threads=${OMP_NUM_THREADS:-unset}"
+    echo "wrapper=${WRAPPER:-none}"
 } > "$OUTDIR/env.txt"
 echo "--- environment ---"; cat "$OUTDIR/env.txt"
 
@@ -86,7 +89,7 @@ HF_ARGS=(--warmup 0 --runs "$RUNS" -i --export-json "$OUTDIR/hyperfine.json")
 for c in "${CMDS[@]}"; do
     name="${c%%|*}"; args="${c#*|}"
     log="$OUTDIR/logs/${name//\//_}.log"
-    HF_ARGS+=(--command-name "$name" "cd '$ROOT/build' && echo '=== run' >> '$log' && '$BIN' $args --verbose 3 >> '$log' 2>&1")
+    HF_ARGS+=(--command-name "$name" "cd '$ROOT/build' && echo '=== run' >> '$log' && ${WRAPPER:-} '$BIN' $args --verbose 3 >> '$log' 2>&1")
 done
 echo; echo "timing ${#CMDS[@]} commands, $RUNS run(s) each"
 hyperfine "${HF_ARGS[@]}"
@@ -113,10 +116,12 @@ for name, r in res.items():
     log = out / "logs" / (name.replace("/", "_") + ".log")
     if not log.exists():
         continue
-    ops, checks, expected, seen = {}, [], {}, {}
+    ops, checks, expected, seen, prof = {}, [], {}, {}, {}
     ansi = re.compile(r"\x1b\[[0-9;]*m")  # Logger.h colors every line
     for line in ansi.sub("", log.read_text(errors="replace")).splitlines():
-        if line.startswith("=== run"):
+        if m := re.match(r"\[profile\] (.+?): ([0-9.]+) s(?: \((\d+)\))?", line):
+            prof.setdefault(m[1], []).append((float(m[2]), m[3]))
+        elif line.startswith("=== run"):
             seen = {}  # the same title can repeat in a run (two Quotients, two Multiplications)
         elif m := re.match(r"\s*Expected:\s*(.*)", line):
             expected["v"] = m[1].strip()
@@ -129,6 +134,10 @@ for name, r in res.items():
             ops.setdefault(t if seen[t] == 1 else f"{t} #{seen[t]}", []).append(secs)
     for op, ts in ops.items():
         rows.append(("op", ring, wl, bits, op, "median_internal", f"{statistics.median(ts):.3f}", "s"))
+    for item, vals in prof.items():  # [profile] lines from a PROFILE=1 build (see install.sh)
+        rows.append(("profile", ring, wl, bits, item, "median_s", f"{statistics.median(v for v, _ in vals):.3f}", "s"))
+        if vals[0][1] is not None:
+            rows.append(("profile", ring, wl, bits, item, "calls", vals[0][1], "count"))
     if checks:
         rows.append(("check", ring, wl, bits, "expected_vs_obtained", "pass_fraction",
                      f"{sum(checks)}/{len(checks)}", ""))
