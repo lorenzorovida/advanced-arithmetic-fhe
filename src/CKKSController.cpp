@@ -1140,8 +1140,6 @@ Ctxt CKKSController::div_integer(const Ctxt &num, const Ctxt &den, int bits, int
 
     }
 
-    return x;
-
     if (verbose) cout << "Final hint : " << print_ints(x, bits * 2, 2) << endl;
 
 
