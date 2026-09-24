@@ -533,6 +533,13 @@ static inline vector<int> reciprocal(uint128_t b, int bits) {
             bitsvector.push_back(c - '0');
     }
 
+    // An empty or short answer would silently turn the division into garbage.
+    if ((int)bitsvector.size() != bits) {
+        std::cerr << "reciprocal: `" << cmd << "` returned " << bitsvector.size() << " bits, expected " << bits
+                  << " (needs python3, run from build/)" << std::endl;
+        exit(1);
+    }
+
     return bitsvector;
 }
 
