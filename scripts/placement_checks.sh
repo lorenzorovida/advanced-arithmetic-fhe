@@ -13,7 +13,7 @@ OUT="${1:-benchmarks/$(date -u +%Y-%m-%d)-placement}"
 export OMP_DISPLAY_AFFINITY=true
 bench() { RINGS=14 WORKLOADS=uniswapv3 ./scripts/run_benchmarks.sh "$OUT/$1" 1; }
 
-OMP_NUM_THREADS=16 bench unpinned16
+OMP_NUM_THREADS=16 OMP_PROC_BIND=false bench unpinned16
 OMP_NUM_THREADS=16 OMP_PLACES=cores OMP_PROC_BIND=close bench cores16
 OMP_NUM_THREADS=16 OMP_PLACES=threads OMP_PROC_BIND=close bench smt16
 OMP_NUM_THREADS=32 OMP_PLACES=threads OMP_PROC_BIND=close bench smt32
