@@ -10,6 +10,8 @@
 #   BITS="64"                word sizes for the `ops` workload (8 16 32 64 128 256)
 #   WORKLOADS="ops decompose uniswapv3"
 #   WRAPPER="numactl --cpunodebind=0 --membind=0"   optional prefix for every AdvancedFHE run
+#                            ("/usr/bin/time -v" adds peak RSS to results.csv)
+#   OMP_NUM_THREADS=16       default here, see below
 #
 # Workloads:
 #   ops        default mode: add, sub, compare, eq, mul, shift, div, sqrt ... on N/bits^2 words
@@ -39,6 +41,10 @@ RINGS="${RINGS:-12 13 14 15 16}"
 BITS="${BITS:-64}"
 WORKLOADS="${WORKLOADS:-ops decompose uniswapv3}"
 BIN="$ROOT/build/AdvancedFHE"
+# OpenFHE parallelises over RNS limbs and scales to about 16 threads. On an n2-standard-128,
+# the OpenMP default (one thread per vCPU) made ring-14 uniswapv3 3.6x slower (954 s vs 262 s
+# at 16 threads; 32 threads and socket pinning gave the same 263 s).
+export OMP_NUM_THREADS="${OMP_NUM_THREADS:-16}"
 
 command -v hyperfine >/dev/null || { echo "hyperfine not found" >&2; exit 1; }
 [ -x "$BIN" ] || { echo "$BIN missing: run scripts/install.sh first" >&2; exit 1; }
@@ -119,7 +125,9 @@ for name, r in res.items():
     ops, checks, expected, seen, prof = {}, [], {}, {}, {}
     ansi = re.compile(r"\x1b\[[0-9;]*m")  # Logger.h colors every line
     for line in ansi.sub("", log.read_text(errors="replace")).splitlines():
-        if m := re.match(r"\[profile\] (.+?): ([0-9.]+) s(?: \((\d+)\))?", line):
+        if m := re.match(r"\s*Maximum resident set size \(kbytes\): (\d+)", line):  # WRAPPER="/usr/bin/time -v"
+            prof.setdefault("peak RSS", []).append((int(m[1]) / 1048576, None))
+        elif m := re.match(r"\[profile\] (.+?): ([0-9.]+) s(?: \((\d+)\))?", line):
             prof.setdefault(m[1], []).append((float(m[2]), m[3]))
         elif line.startswith("=== run"):
             seen = {}  # the same title can repeat in a run (two Quotients, two Multiplications)
@@ -135,7 +143,8 @@ for name, r in res.items():
     for op, ts in ops.items():
         rows.append(("op", ring, wl, bits, op, "median_internal", f"{statistics.median(ts):.3f}", "s"))
     for item, vals in prof.items():  # [profile] lines from a PROFILE=1 build (see install.sh)
-        rows.append(("profile", ring, wl, bits, item, "median_s", f"{statistics.median(v for v, _ in vals):.3f}", "s"))
+        unit = "GB" if item == "peak RSS" else "s"
+        rows.append(("profile", ring, wl, bits, item, f"median_{unit}", f"{statistics.median(v for v, _ in vals):.3f}", unit))
         if vals[0][1] is not None:
             rows.append(("profile", ring, wl, bits, item, "calls", vals[0][1], "count"))
     if checks:
