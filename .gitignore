@@ -8,3 +8,4 @@ openfhe/.DS_Store
 /cmake-build-debug
 /cmake-build-release
 /notebooks/.ipynb_checkpoints
+/.deps

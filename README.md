@@ -40,13 +40,26 @@ One of the key ideas behind this work is *simplicity*. It can indeed be used by 
 We require a custom fork of OpenFHE (that is updated to v1.5.1 and it includes the StC-first bootstrapping), this allows to use the two functions `EvalChebyshevSeriesPSBatchRepeated` and `EvalBootstrapStCFirstBits`. The first generalizes the functionality to evaluate a Chebyshev polynomial over a ciphertext to evaluate $n$ Chebyshev polynomials, one for each slot of the ciphertext. The second allows to evaluate a cleaning bootstrapping operation à la [[BCKS24]](https://eprint.iacr.org/2024/767).
 
 
+### Scripted install (no sudo)
+
+```
+./scripts/install.sh
+```
+
+This clones the fork at a pinned commit into `.deps/src`, builds it without tests, examples or benchmarks, and installs it to `.deps/openfhe`.
+It then builds `build/AdvancedFHE` against that install and runs `--test`. Knobs: `PREFIX=`, `OPENFHE_REF=`, `NATIVE=1` (`-march=native`), `JOBS=`.
+It needs `git`, `cmake` (>= 3.23), a C++17 compiler with OpenMP (`build-essential`, plus `libomp-dev` for clang), and `python3`.
+A 4-core machine takes about 6 minutes. Always run the binary from `build/`, because the coefficient files are loaded from `../coeffs`.
+
+### Manual install
+
 1) Install the `repeated_poly_and_stcboot` branch from [this](https://github.com/lorenzorovida/openfhe-development-chebyshevSIMD) custom fork of OpenFHE 
 
 ```
 git clone --branch repeated_poly_and_stcboot --single-branch https://github.com/lorenzorovida/openfhe-development-chebyshevSIMD
 cd openfhe-development-chebyshevSIMD
-mkdir build
-cmake ..
+mkdir build && cd build
+cmake .. -DBUILD_UNITTESTS=OFF -DBUILD_EXAMPLES=OFF -DBUILD_BENCHMARKS=OFF
 sudo make install
 ```
 
@@ -56,10 +69,10 @@ sudo make install
 ```
 git clone https://github.com/lorenzorovida/flexible-integer-arithmetic-ckks
 cd flexible-integer-arithmetic-ckks
-mkdir build
+mkdir build && cd build
 ```
 
-The `CMakeLists.txt` **must** point to the custom version of OpenFHE. **Be sure** to replace all the instances of `/Users/myuser/openfhe-development-chebyshevSIMD/build` in the `CMakeLists.txt` file to your custom build folder! After that, build the repository:
+CMake must find the fork, not a stock OpenFHE. A fork installed to `/usr/local` is found automatically. For any other prefix, pass `-DCMAKE_PREFIX_PATH=<prefix>` to `cmake`. Then build:
 ```
 cmake ..
 make
@@ -77,6 +90,18 @@ make
 ./AdvancedFHE --test
 ```
 
+
+## Benchmarks
+
+```
+./scripts/run_benchmarks.sh [outdir] [runs]        # defaults: benchmarks/<utc-date>, 3
+RINGS="12 14 16" BITS="32 64" WORKLOADS="ops decompose uniswapv3" ./scripts/run_benchmarks.sh
+```
+
+This uses [hyperfine](https://github.com/sharkdp/hyperfine) to time one process per (ring, workload, bits). By default it covers rings 12 to 16, the batched `ops` run at 64 bits, `--decompose`, and `--uniswapv3` (ring 14 and up only).
+Key generation happens in every process, so `--test` is timed for each (ring, bits), and `median_net` subtracts it.
+The script also parses the per-operation timings the program prints and checks each Expected/Obtained pair. Everything goes into `<outdir>/results.csv`, next to `env.txt`, `hyperfine.json` and the raw logs.
+Parameters use `HEStd_NotSet`, so no ring size carries a security guarantee. Ring 16 needs tens of GB of RAM.
 
 ## Custom parameters
 There are three parameters that can be passed to `./AdvancedFHE`
@@ -109,6 +134,8 @@ Example:
 4) `--input`
 
 Sets the program in input mode, i.e., the program will ask you to set the number of desired bits and to manually insert the values you want to compute operations on.
+
+5) Experiment switches: `--decompose`, `--uniswapv3`, `--mev`, `--hash` (Ascon), `--noise`, `--itob`, `--btoi-itob`. Each one runs a single experiment from `src/main.cpp` and then exits.
 
 ## Examples of usage
 
