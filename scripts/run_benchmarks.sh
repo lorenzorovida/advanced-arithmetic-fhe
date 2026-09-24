@@ -80,7 +80,9 @@ done
 
 # Run from build/, since the coefficient files are loaded from ../coeffs.
 # --verbose 3 prints Expected/Obtained and per-op timings, which are parsed below.
-HF_ARGS=(--warmup 0 --runs "$RUNS" --export-json "$OUTDIR/hyperfine.json")
+# -i: one crashing command must not discard every other measurement; exit codes
+# are kept in hyperfine.json and flagged in results.csv.
+HF_ARGS=(--warmup 0 --runs "$RUNS" -i --export-json "$OUTDIR/hyperfine.json")
 for c in "${CMDS[@]}"; do
     name="${c%%|*}"; args="${c#*|}"
     log="$OUTDIR/logs/${name//\//_}.log"
@@ -100,6 +102,8 @@ for name, r in res.items():
     ring = ring.removeprefix("ring")
     rows.append(("timing", ring, wl, bits, "process", "median_wall", f"{r['median']:.3f}", "s"))
     rows.append(("timing", ring, wl, bits, "process", "stddev_wall", f"{r.get('stddev') or 0:.3f}", "s"))
+    if bad := [c for c in r.get("exit_codes", []) if c != 0]:
+        rows.append(("check", ring, wl, bits, "process", "failed_runs", f"{len(bad)}/{len(r['exit_codes'])} (exit {bad[0]})", ""))
     kg = res.get(f"ring{ring}/keygen/{bits}")
     if kg and wl != "keygen":
         rows.append(("timing", ring, wl, bits, "process", "median_net", f"{r['median'] - kg['median']:.3f}", "s"))
