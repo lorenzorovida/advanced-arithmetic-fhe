@@ -27,12 +27,15 @@ pairs from `--verbose 3` output. Output is `results.csv`. At ring 12 with 4 core
   on case-insensitive macOS (7b213dc). `Reciprocal.py` needed an undocumented numpy, so plaintext division silently used
   an empty reciprocal (da324e5).
 
-## TODO (after the ring-16 VM run on da324e5 completes, so the benchmarked SHA stays fixed)
+- Fixed in 82945bd: the uniswapv3 driver never zero-padded `m_fx`, so it was encrypted with 8192 slots, and `binboot(m_fx - X_post)`
+  aborted in `GetBootPrecom()` (no bootstrap keys for 8192 slots). term2/u/X_post were already correct before the abort.
+
+## TODO
 - [ ] **Plaintext division, multi-slot.** `div_integer(ct, uint128_t)` (CKKSController.cpp:1222) is correct only in slot 0.
       Every other slot comes out at about 0.66x the expected value (ring 12, 16 bits: 1173 correct, then 971 vs 1479, 144 vs 220, ...).
       Uniswap uses zslots=1, so it is unaffected. Suspect the zslots/replication of the reciprocal mask.
       Repro: `cd build && ./AdvancedFHE --ring 12 --bits 16 --verbose 3`, section "Quotient plaintext (a / 42)".
-- [ ] **`g_den_Y_prec` overflow.** main.cpp:360 has `1000000000000000000ULL * 1000`, which wraps in uint64 to 3875820019684212736
+- [x] **`g_den_Y_prec` overflow** (fixed in 82945bd). main.cpp:360 has `1000000000000000000ULL * 1000`, which wraps in uint64 to 3875820019684212736
       instead of 10^21. Fix: `(uint128_t)1000000000000000000ULL * 1000`. It is encrypted and printed but never used, so results don't change.
 - GPU port: github.com/lorenzorovida/FIDESlib-chebyshevSIMD, branch `uniswapv3`, with host program lorenzorovida/advanced-arithmetic-fhe-cuda.
   Fixes are on local branches `jpp_gpu_uniswap_fix` in /workspace/jopasserat/{FIDESlib-chebyshevSIMD,advanced-arithmetic-fhe-cuda}.
