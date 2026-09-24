@@ -47,8 +47,9 @@ We require a custom fork of OpenFHE (that is updated to v1.5.1 and it includes t
 ```
 
 This clones the fork at a pinned commit into `.deps/src`, builds it without tests, examples or benchmarks, and installs it to `.deps/openfhe`.
-It then builds `build/AdvancedFHE` against that install and runs `--test`. Knobs: `PREFIX=`, `OPENFHE_REF=`, `NATIVE=1` (`-march=native`), `JOBS=`.
-It needs `git`, `cmake` (>= 3.23), a C++17 compiler with OpenMP (`build-essential`, plus `libomp-dev` for clang), and `python3`.
+It then builds `build/AdvancedFHE` against that install and runs `--test`. Knobs: `PREFIX=`, `OPENFHE_REF=`, `NATIVE=1` (`-march=native`), `PROFILE=1`, `JOBS=`, `CC=`/`CXX=`.
+It builds with **clang and libomp** by default, because gcc's libgomp is much slower when OpenFHE runs on many threads (3.4x at 128 threads, see Benchmarks).
+It needs `git`, `cmake` (>= 3.23), `clang` with `libomp-dev` (or `CC=gcc CXX=g++`), and `python3`. Changing the compiler wipes the build directories.
 A 4-core machine takes about 6 minutes. Always run the binary from `build/`, because the coefficient files are loaded from `../coeffs`.
 
 ### Manual install
@@ -101,7 +102,9 @@ RINGS="12 14 16" BITS="32 64" WORKLOADS="ops decompose uniswapv3" ./scripts/run_
 This uses [hyperfine](https://github.com/sharkdp/hyperfine) to time one process per (ring, workload, bits). By default it covers rings 12 to 16, the batched `ops` run at 64 bits, `--decompose`, and `--uniswapv3` (ring 14 and up only).
 Key generation happens in every process, so `--test` is timed for each (ring, bits), and `median_net` subtracts it.
 The script defaults to `OMP_NUM_THREADS=16`. OpenFHE parallelises over RNS limbs, and on a 128-vCPU VM the OpenMP default of one thread
-per vCPU made uniswapv3 3.6x slower than 16 threads. Use the same setting when running `./AdvancedFHE` by hand.
+per vCPU made uniswapv3 3.6x slower than 16 threads. Use the same setting when running `./AdvancedFHE` by hand, with one thread per physical core and no hyperthreads:
+`OMP_NUM_THREADS=16 OMP_PLACES=cores OMP_PROC_BIND=close ./AdvancedFHE ...`. On a c4d-highcpu-32 that ran 6% faster than
+unpinned, and hyperthreads were 26% slower.
 For a per-step breakdown (setup, LUT file reads, plaintext encoding, batched Chebyshev, bootstrapping), build with
 `PROFILE=1 ./scripts/install.sh`: the binary then prints `[profile]` lines at exit, and `results.csv` includes them.
 The script also parses the per-operation timings the program prints and checks each Expected/Obtained pair. Everything goes into `<outdir>/results.csv`, next to `env.txt`, `hyperfine.json` and the raw logs.

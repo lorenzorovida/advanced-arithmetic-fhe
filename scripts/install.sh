@@ -9,6 +9,7 @@
 #   NATIVE=1              build the fork with -march=native (WITH_NATIVEOPT)
 #   PROFILE=1             apply scripts/openfhe-profile.patch (per-step [profile] timers)
 #   JOBS=<n>              parallel build jobs            (default: nproc)
+#   CC=<cc> CXX=<c++>     compiler                       (default: clang / clang++, with libomp)
 #
 # Result: build/AdvancedFHE, checked with `--test`. Run it from build/, since
 # the coefficient files are loaded from ../coeffs.
@@ -24,9 +25,21 @@ BRANCH=repeated_poly_and_stcboot
 # reproducible; set OPENFHE_REF=$BRANCH to track the branch.
 OPENFHE_REF="${OPENFHE_REF:-d9da0cc0b94d3fbc02cb9eafb5ec8f6af0a5d6ea}"
 JOBS="${JOBS:-$(nproc)}"
+# clang + libomp by default. libgomp (gcc) rebuilds its thread team whenever consecutive
+# OpenFHE regions request different widths (openfhe-development #1300). Ring-14 uniswapv3 on
+# n2-standard-128 took 954 s with gcc and 283 s with clang at 128 threads, and 262 s vs 253 s
+# at 16. CC=gcc CXX=g++ still works.
+export CC="${CC:-clang}" CXX="${CXX:-clang++}"
 
-for t in git cmake make c++; do
-    command -v "$t" >/dev/null || { echo "missing: $t (apt install build-essential cmake git)" >&2; exit 1; }
+for t in git cmake make "$CC" "$CXX"; do
+    command -v "$t" >/dev/null || { echo "missing: $t (apt install build-essential clang libomp-dev cmake git)" >&2; exit 1; }
+done
+echo 'int main() {}' | "$CXX" -fopenmp -x c++ - -o /dev/null 2>/dev/null ||
+    { echo "$CXX cannot build OpenMP code (apt install libomp-dev)" >&2; exit 1; }
+# CMake ignores a changed CC/CXX once a build dir is configured: start those over.
+for d in "$SRC/build" "$ROOT/build"; do
+    c="$(sed -n 's/^CMAKE_CXX_COMPILER:[A-Z]*=//p' "$d/CMakeCache.txt" 2>/dev/null || true)"
+    if [ -n "$c" ] && [ "$c" != "$(command -v "$CXX")" ]; then echo "compiler changed ($c -> $CXX): wiping $d"; rm -rf "$d"; fi
 done
 
 if [ ! -d "$SRC/.git" ]; then
