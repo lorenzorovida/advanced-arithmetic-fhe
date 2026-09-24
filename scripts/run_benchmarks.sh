@@ -11,7 +11,7 @@
 #   WORKLOADS="ops decompose uniswapv3"
 #   WRAPPER="numactl --cpunodebind=0 --membind=0"   optional prefix for every AdvancedFHE run
 #                            ("/usr/bin/time -v" adds peak RSS to results.csv)
-#   OMP_NUM_THREADS=16       default here, see below
+#   OMP_NUM_THREADS=16 OMP_PLACES=cores OMP_PROC_BIND=close   defaults here, see below
 #
 # Workloads:
 #   ops        default mode: add, sub, compare, eq, mul, shift, div, sqrt ... on N/bits^2 words
@@ -45,6 +45,9 @@ BIN="$ROOT/build/AdvancedFHE"
 # the OpenMP default (one thread per vCPU) made ring-14 uniswapv3 3.6x slower (954 s vs 262 s
 # at 16 threads; 32 threads and socket pinning gave the same 263 s).
 export OMP_NUM_THREADS="${OMP_NUM_THREADS:-16}"
+# One thread per physical core, never two on SMT siblings. On c4d-highcpu-32 (ring-14 uniswapv3)
+# binding gained 6% over unpinned, and SMT packing lost 26%. Set OMP_PROC_BIND=false to unpin.
+export OMP_PLACES="${OMP_PLACES:-cores}" OMP_PROC_BIND="${OMP_PROC_BIND:-close}"
 
 command -v hyperfine >/dev/null || { echo "hyperfine not found" >&2; exit 1; }
 [ -x "$BIN" ] || { echo "$BIN missing: run scripts/install.sh first" >&2; exit 1; }
@@ -57,7 +60,8 @@ mkdir -p "$OUTDIR/logs"
     echo "openfhe_sha=$(git -C .deps/src/openfhe-development-chebyshevSIMD rev-parse --short HEAD 2>/dev/null || echo unknown)"
     echo "cpu_model=$(awk -F: '/model name/{print $2; exit}' /proc/cpuinfo | sed 's/^ *//')"
     echo "cpu_avx512f=$(grep -q avx512f /proc/cpuinfo && echo yes || echo no)"
-    echo "cores=$(nproc)"
+    echo "cores=$(nproc --all)"  # plain nproc honours OMP_NUM_THREADS
+    echo "physical_cores=$(lscpu -p=core,socket | grep -v '^#' | sort -u | wc -l)"
     echo "mem_gb=$(awk '/MemTotal/{printf "%d", $2/1048576}' /proc/meminfo)"
     # the compiler this build used (CC/CXX may differ from the default c++), and its OpenMP runtime
     echo "cxx=$(sed -nE 's/^set\(CMAKE_CXX_COMPILER_(ID|VERSION) "([^"]+)"\)/\2/p' build/CMakeFiles/*/CMakeCXXCompiler.cmake | paste -sd' ')"
