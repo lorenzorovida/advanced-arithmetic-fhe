@@ -40,6 +40,13 @@ At 16 threads the time splits into bootstrap 54%, other homomorphic ops about 30
   Fixes, plus level diagnostics for the Newton-loop multiply, are on local branches `jpp_gpu_uniswap_fix` in
   /workspace/jopasserat/{FIDESlib-chebyshevSIMD,advanced-arithmetic-fhe-cuda}. See UNISWAPV3_GPU_FIX.md there.
 
+## TODO
+- [ ] **GPU segfault at exit** after the batched ops run (not investigated yet). Diagnose with
+      `cd build && gdb -batch -ex run -ex bt --args ./AdvancedFHEGPU --ring 16 --bits 128`. The suspect is static GPU caches
+      being destroyed after the CUDA context. Details are in FIDESlib-chebyshevSIMD/UNISWAPV3_GPU_FIX.md (branch jpp_gpu_uniswap_fix).
+- GPU benchmarks: advanced-arithmetic-fhe-cuda `scripts/run_benchmarks.sh` (branch jpp_gpu_uniswap_fix). Same layout as ours,
+  plus peak GPU memory and the in-program hot-cache "took" timings.
+
 ## Layout
 | Path | What |
 |---|---|
