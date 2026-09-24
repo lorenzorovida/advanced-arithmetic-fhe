@@ -6,6 +6,7 @@
 #define DISCRETECKKS_CAR_UTILS_H
 
 
+#include <atomic>
 #include <string>
 #include <vector>
 #include <algorithm>
@@ -224,7 +225,15 @@ static inline uint128_t random128()
     return (high << 64) | low;
 }
 
+// Cumulative time in read_vector_file, printed by main() at exit (the GPU loads LUTs once).
+inline std::atomic<uint64_t>& lut_read_ns() { static std::atomic<uint64_t> v{0}; return v; }
+inline std::atomic<uint64_t>& lut_read_files() { static std::atomic<uint64_t> v{0}; return v; }
+
 static inline vector<double> read_vector_file(std::string filename) {
+    struct Timer {
+        steady_clock::time_point t0 = steady_clock::now();
+        ~Timer() { lut_read_ns() += duration_cast<nanoseconds>(steady_clock::now() - t0).count(); lut_read_files()++; }
+    } timer;
     std::ifstream infile(filename);
 
     if (!infile) {

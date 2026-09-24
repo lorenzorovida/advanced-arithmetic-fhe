@@ -7,6 +7,7 @@
 #   PREFIX=<dir>          where the fork is installed   (default: .deps/openfhe)
 #   OPENFHE_REF=<sha|br>  fork commit to build           (default: pinned SHA below)
 #   NATIVE=1              build the fork with -march=native (WITH_NATIVEOPT)
+#   PROFILE=1             apply scripts/openfhe-profile.patch (per-step [profile] timers)
 #   JOBS=<n>              parallel build jobs            (default: nproc)
 #
 # Result: build/AdvancedFHE, checked with `--test`. Run it from build/, since
@@ -37,9 +38,12 @@ echo "OpenFHE fork at $(git -C "$SRC" rev-parse --short HEAD)"
 
 # The fork hardcodes -Wall -Werror after any user flags, and gcc 16 flags
 # -Wsign-compare in ckksrns-advancedshe.cpp (the fork's own additions), so
-# drop -Werror. Reset the file first so the patch doesn't pile up across runs.
-git -C "$SRC" checkout -q -- CMakeLists.txt
+# drop -Werror. Reset the checkout first so patches don't pile up across runs.
+git -C "$SRC" checkout -q -- .
 sed -i 's/ -Werror / /' "$SRC/CMakeLists.txt"
+# PROFILE=1: time plaintext encoding, batched Chebyshev and StC-first bootstrap;
+# AdvancedFHE prints the totals as [profile] lines at exit.
+if [ "${PROFILE:-0}" = 1 ]; then git -C "$SRC" apply "$ROOT/scripts/openfhe-profile.patch"; fi
 
 # Tests/examples/benchmarks are off: they add about 3x to the build and nothing here uses them.
 cmake -S "$SRC" -B "$SRC/build" \

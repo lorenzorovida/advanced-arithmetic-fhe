@@ -1,0 +1,74 @@
+diff --git a/src/pke/include/cryptocontext.h b/src/pke/include/cryptocontext.h
+index 618694b..d0d9f85 100644
+--- a/src/pke/include/cryptocontext.h
++++ b/src/pke/include/cryptocontext.h
+@@ -51,6 +51,8 @@
+ #include "utils/type_name.h"
+ 
+ #include <algorithm>
++#include <atomic>
++#include <chrono>
+ #include <complex>
+ #include <functional>
+ #include <map>
+@@ -68,6 +70,28 @@
+ 
+ namespace lbcrypto {
+ 
++// AdvancedFHE profiling (scripts/openfhe-profile.patch): cumulative wall time and
++// call counts, read by the app at exit. Inline-function statics are one instance
++// across libOPENFHEpke and the executable.
++#define OPENFHE_PROFILE_TIMERS 1
++struct ProfileCounter {
++    std::atomic<uint64_t> ns{0}, calls{0};
++};
++enum ProfileSlot { PROF_ENCODE = 0, PROF_CHEBYSHEV, PROF_BOOT_STC_BITS, PROF_NSLOTS };
++inline ProfileCounter* ProfileCounters() {
++    static ProfileCounter c[PROF_NSLOTS];
++    return c;
++}
++struct ProfileScope {
++    ProfileCounter& c;
++    std::chrono::steady_clock::time_point t0 = std::chrono::steady_clock::now();
++    explicit ProfileScope(ProfileSlot s) : c(ProfileCounters()[s]) {}
++    ~ProfileScope() {
++        c.ns += std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - t0).count();
++        c.calls++;
++    }
++};
++
+ /**
+  * @class CryptoContextImpl
+  * @brief A class to simplify access to OpenFHE's PKE functionality.
+@@ -363,6 +387,7 @@ protected:
+     virtual Plaintext MakeCKKSPackedPlaintextInternal(const std::vector<std::complex<double>>& value,
+                                                       size_t noiseScaleDeg, uint32_t level,
+                                                       const std::shared_ptr<ParmType> params, uint32_t slots) const {
++        ProfileScope prof(PROF_ENCODE);
+         VerifyCKKSScheme(__func__);
+         const auto cryptoParams = std::dynamic_pointer_cast<CryptoParametersRNS>(GetCryptoParameters());
+         if (level > 0) {
+@@ -2889,6 +2914,7 @@ public:
+     Ciphertext<Element> EvalChebyshevSeriesPSBatch(ConstCiphertext<Element>& ciphertext,
+                                               const std::vector<std::vector<VectorDataType>>& batchOfCoefficients, double a,
+                                               double b) const {
++        ProfileScope prof(PROF_CHEBYSHEV);
+         ValidateCiphertext(ciphertext);
+         return GetScheme()->EvalChebyshevSeriesPSBatch(ciphertext, batchOfCoefficients, a, b);
+     }
+@@ -2897,6 +2923,7 @@ public:
+     Ciphertext<Element> EvalChebyshevSeriesPSBatchRepeated(ConstCiphertext<Element>& ciphertext,
+                                                    const std::vector<std::vector<VectorDataType>>& batchOfCoefficients, double a,
+                                                    double b, int repetitions) const {
++        ProfileScope prof(PROF_CHEBYSHEV);
+         ValidateCiphertext(ciphertext);
+         return GetScheme()->EvalChebyshevSeriesPSBatchRepeated(ciphertext, batchOfCoefficients, a, b, repetitions);
+     }
+@@ -3599,6 +3626,7 @@ public:
+ 
+     Ciphertext<Element> EvalBootstrapStCFirstBits(ConstCiphertext<Element>& ciphertext, uint32_t numIterations = 1,
+                                               uint32_t precision = 0) const {
++        ProfileScope prof(PROF_BOOT_STC_BITS);
+         return GetScheme()->EvalBootstrapStCFirstBits(ciphertext, numIterations, precision);
+     }
+ 
