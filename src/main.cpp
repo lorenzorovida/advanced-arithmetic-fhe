@@ -357,7 +357,7 @@ void experiment_uniswap_v3() {
     user_amount.push_back(3750000000000000000);
 
     vector<uint128_t> g_den_Y_prec;
-    g_den_Y_prec.push_back(1000000000000000000ULL * 1000); // This is 1000000000000000000000
+    g_den_Y_prec.push_back(static_cast<uint128_t>(1000000000000000000ULL) * 1000); // This is 1000000000000000000000
 
     vector<uint128_t> inv_sqrt_P0_fx;
     inv_sqrt_P0_fx.push_back(515557995982445430);
@@ -386,6 +386,7 @@ void experiment_uniswap_v3() {
         g_den_Y_prec.push_back(0);
         inv_sqrt_P0_fx.push_back(0);
         numerator.push_back(0);
+        m_fx.push_back(0);
         g_den.push_back(0);
     }
 
