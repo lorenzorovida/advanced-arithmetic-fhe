@@ -83,6 +83,12 @@ Setup in `main()` that happens **before** any experiment, whatever the flags:
 `experiment_hash_ascon` :121, `experiment_mev` :219, `experiment_decompose` :276, `experiment_uniswap_v3` :329,
 `experiment_squareroot` :446, `experiment_division` :469, `experiment_noise_estimate` :497, `experiment_BtoI_ItoB` :684, `experiment_ItoB` :814.
 
+### Naming across repos
+The `--uniswapv3` experiment is the same computation as `backrun-sqrtfree` in fhe_backrun (TFHE): the sqrt-free
+Uniswap V3 back-run amount after the 3.75 ETH user swap. `--mev` is the V2 back-run with a square root, which
+corresponds to `backrun-newton`; it is not benchmarked yet. On c4d-highcpu-64 at N=2^16, TFHE with AVX-512 took 61.6 s
+and CKKS with 32 threads took 622.0 s.
+
 ### `--decompose` (main.cpp:276)
 zslots = N/16. It encrypts N/2 slots, laid out as zslots random bytes in [0,255], each repeated 8 times. It then calls
 `EvalChebyshevSeriesPSBatchRepeated` with the 8 degree-451 polys over [0,255], so slot j of each group gets bit j.
