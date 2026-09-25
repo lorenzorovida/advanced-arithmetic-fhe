@@ -414,8 +414,14 @@ void experiment_uniswap_v3() {
     term2_fx = cc.rot(term2_fx, 21);
 
     // 5^21 = 476837158203125 = 9765625 * 48828125
-    term2_fx = cc.div_integer(term2_fx, 9765625, 128, 1);
-    term2_fx = cc.div_integer(term2_fx, 48828125, 128, 1);
+    //term2_fx = cc.div_integer(term2_fx, 9765625, 128, 1);
+    //term2_fx = cc.div_integer(term2_fx, 48828125, 128, 1);
+    vector<int> reciprocal = {0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 0, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 1, 0};
+    append_zeros(reciprocal, (int)(term2_fx->GetSlots() - reciprocal.size()));
+    Ptxt p = cc.encode(reciprocal, term2_fx->GetLevel());
+    term2_fx = cc.div_integer(term2_fx, p, 49, 1, 128, 1);
+
+
 
     // Appearantly the code fails if I divide directly with 476837158203125... must be an issue in the data represntation, whatever
 
@@ -998,6 +1004,7 @@ void random_operations_batched(int bits) {
     log(2) << "Expected: " << to_string_uint128(div_simd(a, b)) << endl;
     log(2) << "Obtained: " << cc.print_ints(cdiv, bits, slots) << endl;
     if (verbose >= 3) print_duration(time, "Quotient took: ");
+    //cc.print(cdiv, 1 << 13);
     log(1) << "-----" << endl;
 
 

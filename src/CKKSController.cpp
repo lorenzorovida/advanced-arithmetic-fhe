@@ -1130,6 +1130,9 @@ Ctxt CKKSController::div_integer(const Ctxt &num, const Ctxt &den, int bits, int
         //x = mul_integer(x, term, bits * 2, bits * 2, 1, 1, true);
         x = mul_integer(rot(x, 2), rot(term, 2), bits, bits, zslots, zslots, true);
 
+
+
+
         x = rot(x, bits);
         x = rot(x, -1);
         x = rot(x, -1);
@@ -1139,8 +1142,6 @@ Ctxt CKKSController::div_integer(const Ctxt &num, const Ctxt &den, int bits, int
         if (verbose) cout << "Hint: " << print_ints(x, bits * 2, 2) << endl;
 
     }
-
-    return x;
 
     if (verbose) cout << "Final hint : " << print_ints(x, bits * 2, 2) << endl;
 
