@@ -75,6 +75,9 @@ Setup in `main()` that happens **before** any experiment, whatever the flags:
 ## CKKSController.cpp hot spots
 - Context :3. SPARSE_ENCAPSULATED secret, `HEStd_NotSet` (**no security guarantee at any ring size**), dcrtBits 36, firstMod 41,
   FLEXIBLEAUTO, 3 large digits, depth = 14 + boot depth {3,3}, full slots (N/2). Bootstrapping setup :43.
+  **Security:** log QP = 1542 (31 Q + 7 P towers) at every N. With the same parameters under `HEStd_128_classic`, OpenFHE
+  accepts N = 2^16 and 2^17 and rejects 2^14 and 2^15 ("does not comply with HE standards recommendation (65536)").
+  So only `--ring 16` results are at 128-bit; smaller rings are fine for relative comparisons only.
 - `clean` :369, `add_integer` :475, `sub_integer` :518, `mul_integer` :766, `shf_integer` :888, `bit_length` :905,
   `blind_rotation` :957, `div_integer` :984/:1193/:1222, `square_root_integer` :1253, `eq_integer` :1678,
   `ascon_permutation` :1710, `bootstrap` :1935, `binboot` :1943 (StC-first bits bootstrap), `chebyshev*` :1950-1960.
