@@ -50,26 +50,8 @@ void experiment_noise_estimate();
 void experiment_ItoB();
 void experiment_BtoI_ItoB();
 
-static steady_clock::time_point t_start = steady_clock::now();
-static double setup_s = 0;
-
-// Where the time goes, for comparison with the GPU port (which loads LUTs and encodes
-// its plaintexts once, ahead of time). Printed at exit, parsed by run_benchmarks.sh.
-static void print_profile() {
-    auto secs = [](uint64_t ns) { return ns / 1e9; };
-    fprintf(stderr, "[profile] total: %.3f s\n", duration<double>(steady_clock::now() - t_start).count());
-    fprintf(stderr, "[profile] setup (context + keys + precomputations): %.3f s\n", setup_s);
-    fprintf(stderr, "[profile] LUT file reads: %.3f s (%llu)\n", secs(lut_read_ns()), (unsigned long long)lut_read_files());
-#ifdef OPENFHE_PROFILE_TIMERS
-    const char* names[] = {"plaintext encode (all callers)", "Chebyshev PSBatch (incl. its encodes)", "StC-first bootstrap"};
-    for (int i = 0; i < PROF_NSLOTS; i++)
-        fprintf(stderr, "[profile] %s: %.3f s (%llu)\n", names[i], secs(ProfileCounters()[i].ns), (unsigned long long)ProfileCounters()[i].calls);
-#endif
-}
-
 int main(int argc, char* argv[]) {
     read_arguments(argc, argv);
-    atexit(print_profile);
 
     // Con 13 levels 256-bits
     cc.generate_context_for_bootstrapping(1 << ring_size, 14);
@@ -77,7 +59,6 @@ int main(int argc, char* argv[]) {
     cc.generate_rotations_for_multiplications(wordsize);
     cc.generate_rotations_for_bit_length(wordsize);
     cc.generate_precomputations_for_multiplications(wordsize, cc.get_context()->GetRingDimension());
-    setup_s = duration<double>(steady_clock::now() - t_start).count();
 
     if (mev) {
         experiment_mev();
@@ -376,7 +357,7 @@ void experiment_uniswap_v3() {
     user_amount.push_back(3750000000000000000);
 
     vector<uint128_t> g_den_Y_prec;
-    g_den_Y_prec.push_back(static_cast<uint128_t>(1000000000000000000ULL) * 1000); // This is 1000000000000000000000
+    g_den_Y_prec.push_back(1000000000000000000ULL * 1000); // This is 1000000000000000000000
 
     vector<uint128_t> inv_sqrt_P0_fx;
     inv_sqrt_P0_fx.push_back(515557995982445430);
@@ -405,7 +386,6 @@ void experiment_uniswap_v3() {
         g_den_Y_prec.push_back(0);
         inv_sqrt_P0_fx.push_back(0);
         numerator.push_back(0);
-        m_fx.push_back(0);
         g_den.push_back(0);
     }
 
