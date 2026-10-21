@@ -37,6 +37,9 @@ else()
 endif()
 
 add_executable(AdvancedFHE src/main.cpp src/CKKSController.cpp src/CKKSController.h src/Utils.h src/Logger.h)
+# The MEV back-run experiments (--uniswapv3, --mev, --decompose, --hash, --division, --sqrt), kept out of main.cpp.
+add_executable(AdvancedFHE_MEV src/mev_experiments.cpp src/CKKSController.cpp src/CKKSController.h src/Utils.h src/Logger.h)
+target_link_libraries(AdvancedFHE_MEV PRIVATE OPENFHEpke OPENFHEcore OPENFHEbinfhe)
 
 
 target_link_libraries(AdvancedFHE PRIVATE

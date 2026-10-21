@@ -51,7 +51,8 @@ At 16 threads the time splits into bootstrap 54%, other homomorphic ops about 30
 | Path | What |
 |---|---|
 | `scripts/` | `install.sh`, `run_benchmarks.sh` |
-| `src/main.cpp` | CLI and experiments. Globals at :13-35, `main` :53, `read_arguments` :1151 |
+| `src/main.cpp` | `AdvancedFHE`: CLI, the library's demo and noise experiments. `main` :36, `read_arguments` :741 |
+| `src/mev_experiments.cpp` | `AdvancedFHE_MEV`: the MEV experiments, kept out of `main.cpp` (and out of the public `main` during double-blind review). `main` :56, `read_arguments` :464 |
 | `src/CKKSController.{h,cpp}` | Wrapper around `CryptoContext`: context/keygen, the integer ops, bootstrapping, Chebyshev |
 | `src/Utils.h` | Header-only helpers: bit/int conversion, plaintext `*_simd` reference ops, `read_vector_file` :227, `print_duration` :30, plaintext `ascon_permutation` :472 |
 | `src/Logger.h` | `log(level)` colored stream gated by `verbose` |
@@ -63,11 +64,11 @@ At 16 threads the time splits into bootstrap 54%, other homomorphic ops about 30
 | `results/` | Benchmark logs (M5 Max) |
 | `shoptest.txt`, `imgs/` | Noise: a shell-setup scratch file, and README gif frames |
 
-## CLI flags (`read_arguments`, main.cpp:1151)
-`--ring <logN>` (default 12), `--bits <w>` (default 32), `--verbose <0-3>`, `--test`, `--input`,
-and the experiment switches below. Each experiment runs, then calls `exit(0)`. Precedence order:
-`--mev`, `--hash` (Ascon), `--noise`, `--itob`, `--btoi-itob`, `--uniswapv3`, `--decompose`.
-With no switch it runs `random_operations_batched(wordsize)` (:890). `--input` runs `random_operations` (:1014).
+## CLI flags
+`AdvancedFHE` (`src/main.cpp`): `--ring <logN>` (default 12), `--bits <w>` (default 32), `--verbose <0-3>`, `--test`,
+`--input`, and `--noise`, `--itob`, `--btoi-itob`. With no switch it runs `random_operations_batched(wordsize)`.
+`AdvancedFHE_MEV` (`src/mev_experiments.cpp`): the same `--ring`, `--bits`, `--verbose`, `--test`, and one of
+`--uniswapv3`, `--mev`, `--decompose`, `--hash` (Ascon), `--division`, `--sqrt`. It prints the `[profile]` lines at exit.
 
 Setup in `main()` that happens **before** any experiment, whatever the flags:
 `generate_context_for_bootstrapping(2^ring, 14)`, followed by rotation keys and precomputations for add/mul/bit_length at `wordsize`.
@@ -82,9 +83,10 @@ Setup in `main()` that happens **before** any experiment, whatever the flags:
   `blind_rotation` :957, `div_integer` :984/:1193/:1222, `square_root_integer` :1253, `eq_integer` :1678,
   `ascon_permutation` :1710, `bootstrap` :1935, `binboot` :1943 (StC-first bits bootstrap), `chebyshev*` :1950-1960.
 
-## Experiments in main.cpp
-`experiment_hash_ascon` :121, `experiment_mev` :219, `experiment_decompose` :276, `experiment_uniswap_v3` :329,
-`experiment_squareroot` :446, `experiment_division` :469, `experiment_noise_estimate` :497, `experiment_BtoI_ItoB` :684, `experiment_ItoB` :814.
+## MEV experiments, in mev_experiments.cpp
+`experiment_hash_ascon` :82, `experiment_mev` :180, `experiment_decompose` :237, `experiment_uniswap_v3` :289,
+`experiment_squareroot` :413, `experiment_division` :436. In `src/main.cpp`: `experiment_noise_estimate` :86,
+`experiment_BtoI_ItoB` :273, `experiment_ItoB` :403.
 
 ### Naming across repos
 The `--uniswapv3` experiment is the same computation as `backrun-sqrtfree` in fhe_backrun (TFHE): the sqrt-free
@@ -92,7 +94,7 @@ Uniswap V3 back-run amount after the 3.75 ETH user swap. `--mev` is the V2 back-
 corresponds to `backrun-newton`; it is not benchmarked yet. On c4d-highcpu-64 at N=2^16, TFHE with AVX-512 took 61.6 s
 and CKKS with 32 threads took 622.0 s.
 
-### `--decompose` (main.cpp:276)
+### `--decompose` (mev_experiments.cpp:237)
 zslots = N/16. It encrypts N/2 slots, laid out as zslots random bytes in [0,255], each repeated 8 times. It then calls
 `EvalChebyshevSeriesPSBatchRepeated` with the 8 degree-451 polys over [0,255], so slot j of each group gets bit j.
 That is followed by `binboot`, and it prints the first 100 slots before and after, plus the timing. `--bits` has no effect on the

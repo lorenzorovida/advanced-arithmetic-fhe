@@ -40,7 +40,8 @@ RUNS="${2:-3}"
 RINGS="${RINGS:-12 13 14 15 16}"
 BITS="${BITS:-64}"
 WORKLOADS="${WORKLOADS:-ops decompose uniswapv3}"
-BIN="$ROOT/build/AdvancedFHE"
+BIN="$ROOT/build/AdvancedFHE"          # ops (the library's own demo)
+BIN_MEV="$ROOT/build/AdvancedFHE_MEV"  # decompose, uniswapv3, keygen (same setup, plus the [profile] lines)
 # OpenFHE parallelises over RNS limbs and scales to about 16 threads. On an n2-standard-128,
 # the OpenMP default (one thread per vCPU) made ring-14 uniswapv3 3.6x slower (954 s vs 262 s
 # at 16 threads; 32 threads and socket pinning gave the same 263 s).
@@ -50,7 +51,7 @@ export OMP_NUM_THREADS="${OMP_NUM_THREADS:-16}"
 export OMP_PLACES="${OMP_PLACES:-cores}" OMP_PROC_BIND="${OMP_PROC_BIND:-close}"
 
 command -v hyperfine >/dev/null || { echo "hyperfine not found" >&2; exit 1; }
-[ -x "$BIN" ] || { echo "$BIN missing: run scripts/install.sh first" >&2; exit 1; }
+for b in "$BIN" "$BIN_MEV"; do [ -x "$b" ] || { echo "$b missing: run scripts/install.sh first" >&2; exit 1; }; done
 mkdir -p "$OUTDIR/logs"
 
 {
@@ -102,8 +103,9 @@ done
 HF_ARGS=(--warmup 0 --runs "$RUNS" -i --export-json "$OUTDIR/hyperfine.json")
 for c in "${CMDS[@]}"; do
     name="${c%%|*}"; args="${c#*|}"
+    bin="$BIN_MEV"; [[ "$name" == */ops/* ]] && bin="$BIN"
     log="$OUTDIR/logs/${name//\//_}.log"
-    HF_ARGS+=(--command-name "$name" "cd '$ROOT/build' && echo '=== run' >> '$log' && ${WRAPPER:-} '$BIN' $args --verbose 3 >> '$log' 2>&1")
+    HF_ARGS+=(--command-name "$name" "cd '$ROOT/build' && echo '=== run' >> '$log' && ${WRAPPER:-} '$bin' $args --verbose 3 >> '$log' 2>&1")
 done
 echo; echo "timing ${#CMDS[@]} commands, $RUNS run(s) each"
 hyperfine "${HF_ARGS[@]}"

@@ -11,7 +11,7 @@
 #   JOBS=<n>              parallel build jobs            (default: nproc)
 #   CC=<cc> CXX=<c++>     compiler                       (default: clang / clang++, with libomp)
 #
-# Result: build/AdvancedFHE, checked with `--test`. Run it from build/, since
+# Result: build/AdvancedFHE and build/AdvancedFHE_MEV (the MEV experiments), checked with `--test`. Run it from build/, since
 # the coefficient files are loaded from ../coeffs.
 set -euo pipefail
 
@@ -76,4 +76,4 @@ cmake -S "$ROOT" -B "$ROOT/build" -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH
     -DCMAKE_BUILD_RPATH="$PREFIX/lib"
 cmake --build "$ROOT/build" -j "$JOBS"
 
-(cd "$ROOT/build" && ./AdvancedFHE --test --ring 12)
+(cd "$ROOT/build" && ./AdvancedFHE --test --ring 12 && ./AdvancedFHE_MEV --test --ring 12)

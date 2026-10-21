@@ -142,7 +142,7 @@ Example:
 
 Sets the program in input mode, i.e., the program will ask you to set the number of desired bits and to manually insert the values you want to compute operations on.
 
-5) Experiment switches: `--decompose`, `--uniswapv3`, `--mev`, `--hash` (Ascon), `--noise`, `--itob`, `--btoi-itob`. Each one runs a single experiment from `src/main.cpp` and then exits.
+5) Experiment switches: `--noise`, `--itob`, `--btoi-itob` on `./AdvancedFHE`. The MEV experiments are a separate binary, `./AdvancedFHE_MEV` (`src/mev_experiments.cpp`): `--uniswapv3`, `--mev`, `--decompose`, `--hash` (Ascon), `--division`, `--sqrt`. Each one runs a single experiment and then exits.
 
 ## Examples of usage
 

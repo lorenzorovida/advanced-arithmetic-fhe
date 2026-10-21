@@ -34,7 +34,7 @@ run() {  # name k
     echo "$1: socket $(( $2 % 2 )) cpus $cpus" >> "$OUT/placement.txt"
     (cd build && OMP_NUM_THREADS=$THREADS OMP_PLACES=cores OMP_PROC_BIND=close \
         numactl --physcpubind="$cpus" --membind=$(( $2 % 2 )) \
-        /usr/bin/time -v ./AdvancedFHE --ring 14 --bits 128 --uniswapv3 > "$OUT/$1.log" 2>&1)
+        /usr/bin/time -v ./AdvancedFHE_MEV --ring 14 --bits 128 --uniswapv3 > "$OUT/$1.log" 2>&1)
 }
 
 run single 0
