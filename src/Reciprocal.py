@@ -1,12 +1,11 @@
 #So apparently is annoying to handle 257 bits in C++, so...
 
 import sys
-import numpy as np
 
 def int_to_bits_lsb(x, width=None):
     if width is None:
         width = max(1, x.bit_length())
-    return np.array([(x >> i) & 1 for i in range(width)], dtype=np.uint8)
+    return [(x >> i) & 1 for i in range(width)]
 
 
 bits = int(sys.argv[1])
